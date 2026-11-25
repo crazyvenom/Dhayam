@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SaTz Tech - Intro Options</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Trebuchet MS',system-ui,sans-serif;background:#0d0f16;color:#eee;padding:20px 14px 40px}
+h1{text-align:center;font-size:22px}
+.sub{text-align:center;font-size:13px;opacity:.7;margin:6px 0 14px}
+.top{text-align:center;margin-bottom:18px}
+.top button{padding:10px 18px;border-radius:999px;border:1px solid #444;background:#1c2030;color:#fff;font-size:14px;cursor:pointer}
+.grid{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+.card{width:250px}
+.stage{width:230px;height:410px;margin:0 auto;background:#05060d;border-radius:22px;border:5px solid #000;position:relative;overflow:hidden;display:grid;place-items:center;cursor:pointer;box-shadow:0 14px 40px rgba(0,0,0,.6)}
+.card h2{font-size:16px;margin:12px 0 4px;text-align:center}
+.card p{font-size:12.5px;line-height:1.45;opacity:.8;text-align:center;min-height:54px}
+.card .meta{text-align:center;font-size:11.5px;opacity:.55;margin-top:2px}
+.card .pick{display:block;margin:8px auto 0;padding:7px 14px;border-radius:8px;border:1px solid #444;background:#1c2030;color:#fff;font-size:12.5px;cursor:pointer}
+svg{display:block;overflow:visible}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+/* ============ 1. NEON PULSE ============ */
+.v1 .hex,.v1 .s{stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 5px #4fe3ff)}
+.v1 .hex{animation:draw 1s .2s forwards}
+.v1 .s{animation:draw .9s 1s forwards}
+.v1 .glow{opacity:0;animation:fade .6s 1.9s forwards,pulse 1.4s 2.4s ease-in-out 2}
+@keyframes pulse{50%{opacity:.35}}
+.v1 .name{font-size:44px;font-weight:900;letter-spacing:2px;display:flex;color:#fff;text-shadow:0 0 14px #4fe3ff,0 0 30px #ff4fd8}
+.v1 .name span{opacity:0;animation:up .5s forwards;animation-delay:calc(1.7s + var(--i)*.12s)}
+.v1 .tech{font-size:15px;font-weight:700;color:#9fe9ff;letter-spacing:2px;opacity:0;animation:fade .4s 2.2s forwards,spread 1.2s 2.2s forwards}
+@keyframes spread{from{letter-spacing:2px}to{letter-spacing:15px}}
+.v1 .scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#4fe3ff,#ff4fd8,transparent);top:-10px;opacity:.9;animation:sweep 1.1s 2.6s ease-in forwards}
+@keyframes sweep{to{top:420px}}
+
+/* ============ 2. GLITCH BOOT ============ */
+.v2{position:absolute;inset:0;display:grid;place-items:center}
+.v2::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px);pointer-events:none}
+.v2 .badge{width:84px;height:84px;border:4px solid #fff;display:grid;place-items:center;font-size:58px;font-weight:900;color:#fff;opacity:0;animation:flick 1s .2s steps(1) forwards}
+@keyframes flick{0%{opacity:0}10%{opacity:1}20%{opacity:0}35%{opacity:1}45%{opacity:0}60%,100%{opacity:1}}
+.v2 .gl{position:relative;font-size:46px;font-weight:900;color:#fff;opacity:0;animation:fade .01s 1.2s forwards}
+.v2 .gl::before,.v2 .gl::after{content:attr(data-t);position:absolute;left:0;top:0;width:100%}
+.v2 .gl::before{color:#ff2d55;animation:g1 .9s 1.2s steps(2) 2;mix-blend-mode:screen}
+.v2 .gl::after{color:#18f0ff;animation:g2 .9s 1.2s steps(2) 2;mix-blend-mode:screen}
+@keyframes g1{0%{transform:translate(-6px,2px);clip-path:inset(0 0 60% 0)}30%{transform:translate(5px,-2px);clip-path:inset(40% 0 20% 0)}60%{transform:translate(-4px,1px);clip-path:inset(70% 0 0 0)}100%{transform:none;clip-path:inset(0)}}
+@keyframes g2{0%{transform:translate(6px,-2px);clip-path:inset(50% 0 10% 0)}30%{transform:translate(-5px,2px);clip-path:inset(0 0 70% 0)}60%{transform:translate(4px,-1px);clip-path:inset(30% 0 40% 0)}100%{transform:none;clip-path:inset(0)}}
+.v2 .tech2{font-size:16px;font-weight:800;letter-spacing:14px;margin-right:-14px;color:#ff2d55;opacity:0;animation:fade .3s 2.3s steps(3) forwards}
+.v2 .flash{position:absolute;inset:0;background:#fff;opacity:0;animation:flashA .4s 2.1s forwards;mix-blend-mode:overlay}
+@keyframes flashA{0%{opacity:.9}100%{opacity:0}}
+
+/* ============ 3. ASSEMBLE ============ */
+.v3 .grid5{display:grid;grid-template-columns:repeat(5,22px);gap:3px;position:relative}
+.v3 .cell{width:22px;height:22px;border-radius:5px;opacity:0;animation:fly .9s cubic-bezier(.2,.9,.25,1) forwards}
+@keyframes fly{from{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scale(.3)}to{opacity:1;transform:none}}
+.v3 .s3{position:absolute;inset:-6px;opacity:0;animation:fade .5s 1.7s forwards}
+.v3 .name3{font-size:42px;font-weight:900;color:#fff;letter-spacing:1px;opacity:0;animation:up .6s 2.1s forwards}
+.v3 .name3 b{background:linear-gradient(90deg,#5b8cff,#b46bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.v3 .tech3{font-size:14px;letter-spacing:12px;margin-right:-12px;color:#aab6ff;font-weight:700;opacity:0;animation:up .6s 2.4s forwards}
+
+/* ============ 4. DICE COIN (Dhayam themed) ============ */
+.v4 .stagebox{position:relative;width:200px;height:130px;display:grid;place-items:center}
+.v4 .coin{width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff4b8,#f3b83c 55%,#9a6212);box-shadow:0 0 28px rgba(255,190,60,.55),inset 0 0 0 4px rgba(255,255,255,.35);display:grid;place-items:center;position:relative;overflow:hidden;opacity:0;animation:flip 1.3s .2s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes flip{0%{opacity:0;transform:scale(.2) rotateY(0)}20%{opacity:1}100%{opacity:1;transform:scale(1) rotateY(720deg)}}
+.v4 .coin::after{content:"";position:absolute;top:-20%;left:-60%;width:40%;height:140%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:glint 1s 1.6s forwards}
+@keyframes glint{to{left:130%}}
+.v4 .stick{position:absolute;top:30px;width:16px;height:76px;border-radius:7px;background:linear-gradient(90deg,#e8c48a,#b98a4a);border:1px solid #5a3814;opacity:0}
+.v4 .sl{left:-4px;animation:inL .6s 1.3s cubic-bezier(.3,1.6,.5,1) forwards}
+.v4 .sr{right:-4px;animation:inR .6s 1.3s cubic-bezier(.3,1.6,.5,1) forwards}
+@keyframes inL{from{opacity:0;transform:translateX(-80px) rotate(-60deg)}to{opacity:1;transform:rotate(-14deg)}}
+@keyframes inR{from{opacity:0;transform:translateX(80px) rotate(60deg)}to{opacity:1;transform:rotate(14deg)}}
+.v4 .spark{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:#ffe27a;opacity:0;animation:burst .8s 1.8s ease-out forwards}
+@keyframes burst{0%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--bx),var(--by))}}
+.v4 .name4{font-size:42px;font-weight:900;color:#ffe9b0;letter-spacing:1px;opacity:0;animation:up .6s 2s forwards;text-shadow:0 2px 0 #7a4a10}
+.v4 .tech4{font-size:14px;letter-spacing:12px;margin-right:-12px;color:#f3b83c;font-weight:800;opacity:0;animation:up .6s 2.3s forwards}
+
+/* ============ 5. GOLD SWEEP (film studio) ============ */
+.v5 .dia,.v5 .s5{stroke-dasharray:1;stroke-dashoffset:1}
+.v5 .dia{animation:draw 1.2s .2s forwards}
+.v5 .s5{animation:draw 1s 1.1s forwards}
+.v5 .fillg{opacity:0;animation:fade .8s 2s forwards}
+.v5 .name5{font-size:44px;font-weight:800;letter-spacing:3px;background:linear-gradient(110deg,#c9a64e 35%,#fff6c0 50%,#c9a64e 65%);background-size:250% 100%;background-position:120% 0;-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;animation:fade .8s 1.9s forwards,shine 1.8s 2.2s forwards}
+@keyframes shine{to{background-position:-30% 0}}
+.v5 .tech5{font-size:13px;letter-spacing:16px;margin-right:-16px;color:#c9a64e;font-weight:600;opacity:0;animation:fade .8s 2.5s forwards}
+.v5 .line{width:0;height:1px;background:linear-gradient(90deg,transparent,#d9b45a,transparent);animation:grow 1s 1.8s forwards}
+@keyframes grow{to{width:170px}}
+</style>
+</head>
+<body>
+<h1>SaTz Tech &middot; intro options</h1>
+<p class="sub">Each plays when the app opens, before the game. Click a phone to replay it.</p>
+<div class="top"><button id="all">&#9654; Replay all</button></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const S = 'M72 30 C60 18 30 20 30 36 C30 52 70 48 70 64 C70 80 38 82 26 70';
+
+function v1(){return `<div class="v1 wrap">
+<svg viewBox="0 0 100 100" width="122">
+<defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4fe3ff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs>
+<polygon class="glow" points="50,4 90,27 90,73 50,96 10,73 10,27" fill="#4fe3ff" fill-opacity=".08"/>
+<polygon class="hex" points="50,4 90,27 90,73 50,96 10,73 10,27" fill="none" stroke="url(#g1)" stroke-width="3" pathLength="1"/>
+<path class="s" d="${S}" fill="none" stroke="url(#g1)" stroke-width="9" stroke-linecap="round" pathLength="1"/>
+</svg>
+<div class="name"><span style="--i:0">S</span><span style="--i:1">a</span><span style="--i:2">T</span><span style="--i:3">z</span></div>
+<div class="tech">TECH</div><div class="scan"></div></div>`}
+
+function v2(){return `<div class="v2"><div class="wrap">
+<div class="badge">S</div>
+<div class="gl" data-t="SaTz">SaTz</div><div class="tech2">TECH</div></div><div class="flash"></div></div>`}
+
+function v3(){
+ let cells='';
+ for(let i=0;i<25;i++){
+  const dx=(Math.random()*260-130).toFixed(0), dy=(Math.random()*420-210).toFixed(0), r=(Math.random()*360-180).toFixed(0);
+  const col=(i%5), row=Math.floor(i/5), hue=220+col*10+row*8;
+  cells+=`<div class="cell" style="--dx:${dx}px;--dy:${dy}px;--r:${r}deg;background:hsl(${hue} 85% ${55+row*3}%);animation-delay:${(i*0.035+0.1).toFixed(2)}s"></div>`}
+ return `<div class="v3 wrap"><div class="grid5">${cells}
+ <svg class="s3" viewBox="0 0 100 100" width="127" height="127"><path d="${S}" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/></svg></div>
+ <div class="name3"><b>SaTz</b></div><div class="tech3">TECH</div></div>`}
+
+function v4(){
+ let sp='';
+ for(let i=0;i<8;i++){const a=i/8*Math.PI*2;sp+=`<i class="spark" style="--bx:${(Math.cos(a)*70).toFixed(0)}px;--by:${(Math.sin(a)*70).toFixed(0)}px"></i>`}
+ return `<div class="v4 wrap"><div class="stagebox">
+ <div class="stick sl"></div><div class="coin">
+ <svg viewBox="0 0 100 100" width="70"><path d="${S}" fill="none" stroke="#5a3306" stroke-width="10" stroke-linecap="round"/></svg></div>
+ <div class="stick sr"></div>${sp}</div>
+ <div class="name4">SaTz</div><div class="tech4">TECH</div></div>`}
+
+function v5(){return `<div class="v5 wrap">
+<svg viewBox="0 0 100 100" width="118">
+<defs><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a8"/><stop offset=".5" stop-color="#d9b45a"/><stop offset="1" stop-color="#8a6a22"/></linearGradient></defs>
+<polygon class="fillg" points="50,6 94,50 50,94 6,50" fill="#d9b45a" fill-opacity=".10"/>
+<polygon class="dia" points="50,6 94,50 50,94 6,50" fill="none" stroke="url(#g5)" stroke-width="2.5" pathLength="1"/>
+<path class="s5" d="${S}" fill="none" stroke="url(#g5)" stroke-width="7" stroke-linecap="round" pathLength="1"/>
+</svg>
+<div class="name5">SaTz</div><div class="line"></div><div class="tech5">TECH</div></div>`}
+
+const items=[
+ {id:'1',fn:v1,title:'1 · Neon Pulse',desc:'Hexagon and S draw themselves in glowing cyan and pink, the name pops in letter by letter, a light bar sweeps down. Matches the Neon Arena look.',meta:'about 4 s · most on-brand'},
+ {id:'2',fn:v2,title:'2 · Glitch Boot',desc:'The logo flickers on like a screen powering up, then the name glitches in red and cyan before snapping clean with a flash.',meta:'about 3 s · edgy, gamer feel'},
+ {id:'3',fn:v3,title:'3 · Assemble',desc:'Colored tiles fly in from everywhere and lock into a badge, the S appears, and the name slides up. Different every time it plays.',meta:'about 3 s · playful, modern'},
+ {id:'4',fn:v4,title:'4 · Dice Coin',desc:'A golden coin spins in, two dice sticks clap beside it with a spark burst. Ties straight into the Dhayam game itself.',meta:'about 3 s · themed to the game'},
+ {id:'5',fn:v5,title:'5 · Gold Sweep',desc:'A fine gold outline draws the diamond and S, then a light sweeps across the name. Calm and premium, like a film studio.',meta:'about 4 s · elegant, classic'}
+];
+const grid=document.getElementById('grid');
+items.forEach(it=>{
+ const c=document.createElement('div');c.className='card';
+ c.innerHTML=`<div class="stage" id="st${it.id}"></div><h2>${it.title}</h2><p>${it.desc}</p><div class="meta">${it.meta}</div><button class="pick">&#8635; Replay</button>`;
+ grid.appendChild(c);
+ const st=c.querySelector('.stage');
+ it.play=()=>{st.innerHTML='';void st.offsetWidth;st.innerHTML=it.fn()};
+ st.onclick=it.play;c.querySelector('.pick').onclick=it.play;
+});
+function playAll(){items.forEach((it,i)=>setTimeout(it.play,i*120))}
+document.getElementById('all').onclick=playAll;
+playAll();
+// Developer hook: open the page as ...intros.html#t=2.5 to freeze every animation at 2.5 seconds
+const frozen=location.hash.match(/t=([\d.]+)/);
+if(frozen){setTimeout(()=>{document.getAnimations().forEach(a=>{a.pause();a.currentTime=parseFloat(frozen[1])*1000})},900)}
+</script>
+</body>
+</html>
