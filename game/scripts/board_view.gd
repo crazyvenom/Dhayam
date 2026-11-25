@@ -25,6 +25,12 @@ func _ready() -> void:
 	queue_redraw()
 
 
+## Squares on straight stretches are drawn perfectly upright, only the diagonals stay tilted.
+func _snap(a: float) -> float:
+	var q: float = roundf(a / (PI / 2.0)) * (PI / 2.0)
+	return q if absf(a - q) < 0.25 else a
+
+
 func _box(bg: Color, border: Color, bw: int, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
@@ -75,13 +81,13 @@ func _draw() -> void:
 	# Pass 1: glow under every square
 	for k in squares:
 		var s: Dictionary = squares[k]
-		draw_set_transform(s["pos"], s["ang"], Vector2.ONE)
+		draw_set_transform(s["pos"], 0.0 if gs.safe.has(k) else _snap(s["ang"]), Vector2.ONE)
 		draw_style_box(_glow, Rect2(-34, -34, 68, 68))
 	# Pass 2: square bodies
 	for k in squares:
 		var s2: Dictionary = squares[k]
-		draw_set_transform(s2["pos"], s2["ang"], Vector2.ONE)
 		var is_safe: bool = gs.safe.has(k)
+		draw_set_transform(s2["pos"], 0.0 if is_safe else _snap(s2["ang"]), Vector2.ONE)
 		var box: StyleBoxFlat = _sq
 		if is_safe:
 			box = _sq_x

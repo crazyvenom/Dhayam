@@ -28,7 +28,7 @@ const BL := Vector2(89, 1049)
 const BR := Vector2(830, 1049)
 const COL1 := Vector2(460, 478)    # first cell of the lower center column
 const BX := Vector2(460, 800)      # bottom X where the diagonals meet
-const SMALL_L := Vector2(397, 478)
+const SMALL_L := Vector2(394, 478)
 const SMALL_R := Vector2(526, 478)
 
 ## Steps along each stretch of a route (both teams use the same counts).
