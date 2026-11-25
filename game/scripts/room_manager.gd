@@ -9,6 +9,7 @@ var net: Node
 var rooms: Dictionary = {}       # code -> Room
 var peer_room: Dictionary = {}   # peer id -> code
 var _chat_last: Dictionary = {}  # peer id -> time of their last reaction
+var _voice_window: Dictionary = {}   # peer id -> [window start ms, packets in window]
 var _clean_timer: float = 0.0
 
 
@@ -143,6 +144,30 @@ func chat(peer: int, msg: int) -> void:
 	var seat: int = r.seat_of_peer(peer)
 	if seat >= 0 and msg >= 0 and msg < 12:
 		r.broadcast_chat(seat, msg)
+
+
+## Voice packets: small, and at most about 40 per second from one player.
+func voice(peer: int, data: PackedByteArray) -> void:
+	if data.size() < 5 or data.size() > 800:
+		return
+	var r: Room = _room_of(peer)
+	if r == null:
+		return
+	var t: int = Time.get_ticks_msec()
+	var w: Array = _voice_window.get(peer, [t, 0])
+	if t - int(w[0]) > 1000:
+		w = [t, 0]
+	w[1] = int(w[1]) + 1
+	_voice_window[peer] = w
+	if int(w[1]) > 60:
+		return
+	r.relay_voice(peer, data)
+
+
+func listen(peer: int, on: bool) -> void:
+	var r: Room = _room_of(peer)
+	if r != null:
+		r.set_listen(peer, on)
 
 
 ## Remove rooms nobody has been in for a minute.

@@ -8,6 +8,8 @@ static var music_on: bool = true
 static var sfx_on: bool = true
 static var player_name: String = ""
 static var avatar: int = 0
+static var voice_on: bool = true
+static var open_mic: bool = false
 static var token: String = ""        # secret id that lets this phone reclaim its seat after a disconnect
 static var _loaded: bool = false
 
@@ -23,6 +25,8 @@ static func load_settings() -> void:
 		player_name = cf.get_value("player", "name", "")
 		avatar = cf.get_value("player", "avatar", 0)
 		token = cf.get_value("player", "token", "")
+		voice_on = cf.get_value("voice", "on", true)
+		open_mic = cf.get_value("voice", "open_mic", false)
 	if OS.has_environment("DHAYAM_TOKEN"):      # test copies of the game pretend to be different phones
 		token = OS.get_environment("DHAYAM_TOKEN")
 		return
@@ -41,4 +45,6 @@ static func save_settings() -> void:
 	cf.set_value("player", "name", player_name)
 	cf.set_value("player", "avatar", avatar)
 	cf.set_value("player", "token", token)
+	cf.set_value("voice", "on", voice_on)
+	cf.set_value("voice", "open_mic", open_mic)
 	cf.save(PATH)

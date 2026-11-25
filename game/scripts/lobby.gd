@@ -15,11 +15,40 @@ func _ready() -> void:
 	Net.error_received.connect(func(t: String) -> void: status_lbl.text = t)
 	Net.connection_lost.connect(_on_lost)
 	_rebuild()
+	_build_voice()
 	DevTools.maybe_shot(self)
 
 
 func _draw() -> void:
 	UI.draw_background(self)
+
+
+## Voice chat works in the lobby too, so everybody can talk before the game starts.
+func _build_voice() -> void:
+	Voice.my_seat = int(Session.info["me"])
+	var vt: ToggleIcon = ToggleIcon.new("voice", Voice.enabled)
+	vt.position = Vector2(404, 14)
+	vt.toggled_state.connect(func(on: bool) -> void: Voice.set_enabled(on))
+	add_child(vt)
+	var mic: MicButton = MicButton.new(60.0)
+	mic.position = Vector2(468, 6)
+	mic.pressed_down.connect(func() -> void:
+		Voice.press()
+		mic.set_muted(Voice.open_mic and Voice.mic_muted))
+	mic.released.connect(func() -> void: Voice.release())
+	add_child(mic)
+	Voice.speaking_changed.connect(func(seat: int, on: bool) -> void:
+		if not is_inside_tree():
+			return
+		var nm: String = ""
+		for p in Session.info["players"]:
+			if p["seat"] == seat:
+				nm = "You" if seat == Voice.my_seat else str(p["name"])
+		if seat == Voice.my_seat:
+			mic.set_active(on)
+		status_lbl.text = ("%s talking..." % nm) if on else "")
+	Voice.notice.connect(func(t: String) -> void: status_lbl.text = t)
+	Voice.sync_listen()
 
 
 func _on_room(info: Dictionary) -> void:
@@ -145,6 +174,7 @@ func _on_leave() -> void:
 	if _leaving:
 		return
 	_leaving = true
+	Voice.reset_room()
 	Net.disconnect_from_server()
 	Session.online = false
 	Session.info = {}

@@ -14,6 +14,7 @@ signal error_received(text: String)
 signal game_started(info: Dictionary)
 signal action_received(action: Dictionary)
 signal chat_received(seat: int, msg: int)
+signal voice_received(seat: int, data: PackedByteArray)
 
 var is_server: bool = false
 var manager: RoomManager
@@ -118,6 +119,18 @@ func c_chat(msg: int) -> void:
 		manager.chat(multiplayer.get_remote_sender_id(), msg)
 
 
+@rpc("any_peer", "call_remote", "reliable")
+func c_voice(data: PackedByteArray) -> void:
+	if is_server:
+		manager.voice(multiplayer.get_remote_sender_id(), data)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func c_listen(on: bool) -> void:
+	if is_server:
+		manager.listen(multiplayer.get_remote_sender_id(), on)
+
+
 # ------------------------------------------------------------------ client side
 
 ## Connect to the server (if not connected yet) and then run the given action.
@@ -201,3 +214,9 @@ func s_action(action: Dictionary) -> void:
 func s_chat(seat: int, msg: int) -> void:
 	if not is_server:
 		chat_received.emit(seat, msg)
+
+
+@rpc("authority", "call_remote", "reliable")
+func s_voice(seat: int, data: PackedByteArray) -> void:
+	if not is_server:
+		voice_received.emit(seat, data)

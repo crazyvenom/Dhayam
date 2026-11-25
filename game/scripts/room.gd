@@ -49,7 +49,7 @@ func add_player(peer: int, player_name: String, avatar: int, token: String) -> i
 	if team_count(team) >= MAX_PER_TEAM:
 		return -1
 	seats.append({"peer": peer, "name": player_name, "avatar": avatar, "team": team,
-		"token": token, "connected": true, "bot": false})
+		"token": token, "connected": true, "bot": false, "listen": true})
 	empty_since = -1.0
 	return seats.size() - 1
 
@@ -148,6 +148,24 @@ func broadcast_action(action: Dictionary) -> void:
 	for s in seats:
 		if s["connected"]:
 			net.send_to(s["peer"], "s_action", [action])
+
+
+## One common voice channel: everything a player says goes to every other player in the room
+## (both teams), except players who switched voice off.
+func relay_voice(peer: int, data: PackedByteArray) -> void:
+	var from_seat: int = seat_of_peer(peer)
+	if from_seat < 0:
+		return
+	for i in seats.size():
+		var s: Dictionary = seats[i]
+		if i != from_seat and s["connected"] and s["listen"]:
+			net.send_to(s["peer"], "s_voice", [from_seat, data])
+
+
+func set_listen(peer: int, on: bool) -> void:
+	var i: int = seat_of_peer(peer)
+	if i >= 0:
+		seats[i]["listen"] = on
 
 
 func broadcast_chat(from_seat: int, msg: int) -> void:

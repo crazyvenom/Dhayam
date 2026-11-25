@@ -37,7 +37,11 @@ func _draw() -> void:
 	if kind == "chat":
 		Reactions.draw_face(self, c, 12.0, 0)
 		return
-	if kind == "music":
+	if kind == "voice":
+		draw_arc(c + Vector2(0, 2), 11.0, PI, TAU, 14, col, 3.0)
+		draw_rect(Rect2(c.x - 14.0, c.y + 1.0, 6.0, 11.0), col)
+		draw_rect(Rect2(c.x + 8.0, c.y + 1.0, 6.0, 11.0), col)
+	elif kind == "music":
 		draw_circle(c + Vector2(-5, 8), 5.5, col)
 		draw_line(c + Vector2(0, 8), c + Vector2(0, -11), col, 3.0)
 		draw_line(c + Vector2(0, -11), c + Vector2(9, -6), col, 3.0)

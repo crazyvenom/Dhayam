@@ -11,6 +11,11 @@ config/icon="res://icon.png"
 [autoload]
 
 Net="*res://scripts/net.gd"
+Voice="*res://scripts/voice.gd"
+
+[audio]
+
+driver/enable_input=true
 
 [display]
 

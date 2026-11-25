@@ -23,6 +23,8 @@ var dropped: bool = false
 var finished: bool = false
 var errors: Array = []
 var chat_sent: bool = false
+var voice_mode: String = ""          # send | listen | deaf (voice relay test)
+var voice_got: Dictionary = {}       # seat -> packets received
 
 
 func _ready() -> void:
@@ -41,11 +43,14 @@ func _ready() -> void:
 			player_name = a.substr(7)
 		elif a.begins_with("--dropat="):
 			drop_at = int(a.substr(9))
+		elif a.begins_with("--voice="):
+			voice_mode = a.substr(8)
 	token = "tok-" + player_name
 	Net.url = url
 	Net.room_updated.connect(_on_room)
 	Net.game_started.connect(_on_start)
 	Net.chat_received.connect(func(seat: int, msg: int) -> void: print(player_name, " CHAT from seat ", seat, " msg ", msg))
+	Net.voice_received.connect(func(seat: int, _d: PackedByteArray) -> void: voice_got[seat] = int(voice_got.get(seat, 0)) + 1)
 	Net.action_received.connect(_on_action)
 	Net.error_received.connect(func(t: String) -> void:
 		errors.append(t)
@@ -101,6 +106,10 @@ func _on_start(info: Dictionary) -> void:
 			gs.apply_move(lg[i + 1], lg[i + 2])
 		count += 1
 	print(player_name, " game started, replayed ", count, " actions, I am seat ", me_seat)
+	if voice_mode == "deaf":
+		Voice.set_enabled(false, false)       # test only: do not save into the real settings
+	elif voice_mode == "send":
+		_send_voice()
 	if role == "host" and not chat_sent:
 		chat_sent = true
 		await get_tree().create_timer(0.5).timeout
@@ -152,10 +161,32 @@ func _maybe_act() -> void:
 		Net.send("c_move", [bm["coin"], bm["chip"]])
 
 
+## A made-up voice: a 220 Hz tone, 60 packets of 40 ms, sent in real time.
+func _send_voice() -> void:
+	await get_tree().create_timer(1.5).timeout
+	var enc: Adpcm = Adpcm.new()
+	var phase: float = 0.0
+	for k in 60:
+		var chunk: PackedFloat32Array = PackedFloat32Array()
+		chunk.resize(640)
+		for i in 640:
+			phase += TAU * 220.0 / 16000.0
+			chunk[i] = 0.3 * sin(phase)
+		Net.send("c_voice", [enc.encode_frame(chunk)])
+		await get_tree().create_timer(0.04).timeout
+	print(player_name, " sent 60 voice packets")
+
+
 func _finish(why: String) -> void:
 	if finished:
 		return
 	finished = true
+	if voice_mode != "":
+		await get_tree().create_timer(4.0).timeout
+		var buffered: int = 0
+		for s in voice_got:
+			buffered += Voice.buffered_frames(int(s))
+		print("VOICE ", player_name, " mode=", voice_mode, " packets_by_seat=", voice_got, " voice_node_received=", Voice.received_packets, " playing_frames_left=", buffered)
 	var h: String = (str(gs.pos) + "|" + str(gs.active) + "|" + str(gs.unlocked) + "|" + str(gs.rot)).md5_text() if gs != null else "none"
 	print("RESULT ", player_name, " ", why, " actions=", count, " hash=", h, " winner=", gs.winner if gs != null else -9)
 	get_tree().quit()

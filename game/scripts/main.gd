@@ -26,6 +26,10 @@ var chat_btn: ToggleIcon
 var chat_panel: Node2D
 var bubbles: Node2D
 var _bubble_slot: int = 0
+var mic_btn: MicButton
+var mode_btn: Button
+var speak_row: Node2D
+var _speaking: Dictionary = {}      # seat -> true while that player is being heard
 
 var queue: Array = []            # actions waiting to be played
 var processing: bool = false     # an action is being animated
@@ -103,9 +107,9 @@ func _demo_chat() -> void:
 	Engine.time_scale = 1.0
 	_on_net_chat(int(Session.roster[0]["seat"]), 1)
 	_on_net_chat(int(Session.roster[1]["seat"]), 7)
-	chat_btn.on = true
+	_on_speaking(int(Session.roster[1]["seat"]), true)       # shows the "who is talking" tag
+	chat_btn.on = false
 	chat_btn.queue_redraw()
-	chat_panel.visible = true
 
 
 func _autoplay() -> void:
@@ -131,7 +135,8 @@ func _draw() -> void:
 
 func _build_ui() -> void:
 	UI.label(self, "DHAYAM", Vector2(0, 6), Vector2(540, 28), 22, Color(0.62, 0.86, 1.0, 0.8))
-	turn_lbl = UI.label(self, "", Vector2(60, 34), Vector2(420, 36), 26, RED_COL)
+	turn_lbl = UI.label(self, "", Vector2(100, 34), Vector2(230, 36), 24, RED_COL)
+	turn_lbl.clip_text = true
 
 	stick1 = StickView.new()
 	stick1.position = Vector2(34, 758)
@@ -145,7 +150,8 @@ func _build_ui() -> void:
 	sum_lbl = UI.label(self, "?", Vector2(150, 752), Vector2(120, 100), 72, CYAN)
 	UI.label(self, "RESULT", Vector2(150, 842), Vector2(120, 20), 12, Color(1, 1, 1, 0.5))
 
-	roll_btn = UI.button(self, "ROLL", Vector2(300, 765), Vector2(210, 90), 34)
+	var roll_w: float = 140.0 if Session.online else 210.0     # online: room for the talk button
+	roll_btn = UI.button(self, "ROLL", Vector2(510.0 - roll_w, 765), Vector2(roll_w, 90), 32 if Session.online else 34)
 	roll_btn.pressed.connect(_on_roll_pressed)
 
 	chips_box = HBoxContainer.new()
@@ -176,12 +182,80 @@ func _build_ui() -> void:
 	add_child(bubbles)
 	if Session.online:
 		_build_reactions()
+		_build_voice()
 
 	banner = UI.label(self, "", Vector2(30, 380), Vector2(480, 120), 26, Color.WHITE)
 	banner.add_theme_stylebox_override("normal", UI.box(Color(0.05, 0.05, 0.2, 0.95), UI.PINK, 18, 12.0))
 	banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	banner.z_index = 80
 	banner.visible = false
+
+
+## Voice chat controls (online games): talk button, hold/open switch, on/off, and who is talking.
+func _build_voice() -> void:
+	var vt: ToggleIcon = ToggleIcon.new("voice", Voice.enabled)
+	vt.position = Vector2(328, 12)
+	vt.toggled_state.connect(func(on: bool) -> void:
+		Voice.set_enabled(on)
+		_set_status("Voice chat is on" if on else "Voice chat is off"))
+	add_child(vt)
+	mic_btn = MicButton.new(76.0)
+	mic_btn.position = Vector2(286, 766)
+	mic_btn.pressed_down.connect(func() -> void:
+		Voice.press()
+		mic_btn.set_muted(Voice.open_mic and Voice.mic_muted))
+	mic_btn.released.connect(func() -> void: Voice.release())
+	add_child(mic_btn)
+	mode_btn = Button.new()
+	mode_btn.text = "OPEN MIC" if Voice.open_mic else "HOLD TO TALK"
+	mode_btn.position = Vector2(272, 846)
+	mode_btn.size = Vector2(104, 28)
+	mode_btn.add_theme_font_size_override("font_size", 12)
+	UI.style_button(mode_btn, Color(0.09, 0.13, 0.38), Color(0.5, 0.6, 0.9), Color.WHITE)
+	mode_btn.pressed.connect(func() -> void:
+		Voice.set_open_mic(not Voice.open_mic)
+		Voice.mic_muted = false
+		mic_btn.set_muted(false)
+		mode_btn.text = "OPEN MIC" if Voice.open_mic else "HOLD TO TALK"
+		_set_status("Open mic: tap the button to mute" if Voice.open_mic else "Hold the button to talk"))
+	add_child(mode_btn)
+	speak_row = Node2D.new()
+	speak_row.position = Vector2(14, 723)
+	add_child(speak_row)
+	Voice.my_seat = Session.me_seat
+	Voice.speaking_changed.connect(_on_speaking)
+	Voice.notice.connect(func(t: String) -> void: _set_status(t))
+	Voice.sync_listen()
+
+
+func _on_speaking(seat: int, on: bool) -> void:
+	if not is_inside_tree():
+		return
+	if on:
+		_speaking[seat] = true
+	else:
+		_speaking.erase(seat)
+	if seat == Voice.my_seat and mic_btn != null:
+		mic_btn.set_active(on)
+	for c in speak_row.get_children():
+		c.queue_free()
+	var x: float = 0.0
+	for s in _speaking.keys():
+		if x > 400.0:
+			break
+		var who: Dictionary = {}
+		for r in Session.roster:
+			if r["seat"] == s:
+				who = r
+		if who.is_empty():
+			continue
+		var av: AvatarView = AvatarView.new(who["avatar"], who["name"], 28.0)
+		av.position = Vector2(x, 0)
+		speak_row.add_child(av)
+		var nm: String = "You" if s == Voice.my_seat else str(who["name"])
+		var l: Label = UI.label(speak_row, nm, Vector2(x + 32, 0), Vector2(90, 28), 15, Color(0.4, 1.0, 0.6), HORIZONTAL_ALIGNMENT_LEFT)
+		l.clip_text = true
+		x += 124.0
 
 
 ## The smiley button (top) and the panel of reactions it opens. Online games only.
@@ -588,6 +662,7 @@ func _on_exit() -> void:
 
 func _leave_to_menu() -> void:
 	if Session.online:
+		Voice.reset_room()
 		Net.disconnect_from_server()
 	Session.online = false
 	Session.info = {}
