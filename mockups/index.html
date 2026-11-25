@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dhayam Look Mockups</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Trebuchet MS',system-ui,sans-serif;background:#111318;color:#eee;min-height:100vh;padding:16px}
+h1{font-size:20px;text-align:center;margin-bottom:4px}
+.sub{text-align:center;font-size:13px;opacity:.7;margin-bottom:14px}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{padding:10px 16px;border-radius:999px;border:1px solid #444;background:#1c1f27;color:#eee;font-size:14px;cursor:pointer}
+.tabs button.on{background:#fff;color:#111;font-weight:700}
+.wrap{display:flex;gap:24px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.note{max-width:340px;font-size:14px;line-height:1.5;background:#1c1f27;border-radius:14px;padding:16px}
+.note h2{font-size:17px;margin-bottom:8px}
+.note ul{padding-left:18px;margin:8px 0}
+.note .tag{display:inline-block;font-size:12px;background:#2b3040;border-radius:6px;padding:2px 8px;margin-top:6px}
+
+/* ---------- phone ---------- */
+.phone{width:min(400px,100%);border-radius:34px;border:6px solid #000;overflow:hidden;position:relative;background:var(--bg);box-shadow:0 20px 60px rgba(0,0,0,.6);color:var(--text)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;gap:8px}
+.chip{background:var(--chip);border:var(--chipborder);border-radius:var(--chipr);padding:6px 12px;font-weight:800;font-size:13px;letter-spacing:.5px}
+.timer{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--chip);border:var(--chipborder)}
+.boardwrap{padding:0 8px}
+svg.board{display:block;width:100%;height:auto}
+.dock{padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px}
+.turn{text-align:center;font-weight:800;font-size:14px;padding:7px;border-radius:var(--chipr);background:var(--accent);color:var(--accenttext)}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.team{background:var(--panel);border:var(--chipborder);border-radius:var(--panelr);padding:8px}
+.team h3{font-size:12px;letter-spacing:1px;margin-bottom:6px;display:flex;justify-content:space-between}
+.team.red h3{color:var(--redtext)}.team.blue h3{color:var(--bluetext)}
+.avs{display:flex;gap:4px;flex-wrap:wrap}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;background:var(--avbg);position:relative}
+.av.speak::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1s infinite}
+.av.empty{opacity:.25}
+@keyframes pulse{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.35);opacity:0}}
+.diceRow{display:flex;align-items:center;gap:12px;background:var(--panel);border:var(--chipborder);border-radius:var(--panelr);padding:10px}
+.sticks{display:flex;gap:8px}
+.stick{width:30px;height:84px;border-radius:var(--stickr);background:var(--stick);border:var(--stickborder);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:var(--stickshadow)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--dot)}
+.zero{width:12px;height:3px;border-radius:2px;background:var(--dot);opacity:.6}
+.stick.roll{animation:shake .12s infinite}
+@keyframes shake{0%{transform:rotate(-8deg) translateY(-4px)}50%{transform:rotate(7deg) translateY(3px)}100%{transform:rotate(-8deg) translateY(-4px)}}
+.res{flex:1;text-align:center}
+.big{font-size:38px;font-weight:900;line-height:1;color:var(--accent)}
+.small{font-size:11px;opacity:.8;margin-top:2px}
+.collected{display:flex;gap:4px;justify-content:center;margin-top:6px;flex-wrap:wrap;min-height:22px}
+.collected span{background:var(--accent);color:var(--accenttext);border-radius:6px;padding:1px 7px;font-weight:800;font-size:12px}
+.rollbtn{border:none;cursor:pointer;font-weight:900;font-size:14px;padding:14px 16px;border-radius:var(--btnr);background:var(--btn);color:var(--btntext);box-shadow:var(--btnshadow)}
+.rollbtn:active{transform:translateY(2px)}
+.tools{display:flex;gap:8px;align-items:center}
+.mic{width:44px;height:44px;border-radius:50%;border:var(--chipborder);background:var(--panel);color:var(--text);font-size:20px;cursor:pointer}
+.mic.mute{opacity:.5}
+.emojis{display:flex;gap:6px;flex:1;justify-content:space-between}
+.emojis button{flex:1;font-size:20px;padding:6px 0;border-radius:var(--chipr);border:var(--chipborder);background:var(--panel);cursor:pointer}
+.floaty{position:absolute;font-size:34px;pointer-events:none;animation:up 1.6s ease-out forwards}
+@keyframes up{0%{transform:translateY(0) scale(.6);opacity:1}100%{transform:translateY(-220px) scale(1.4);opacity:0}}
+
+/* ---------- board parts ---------- */
+.boardbg{fill:var(--board)}
+.edge{fill:none;stroke:var(--edge);stroke-width:64;stroke-linejoin:round;stroke-linecap:round}
+.lane{fill:none;stroke:var(--lane);stroke-width:54;stroke-linejoin:round;stroke-linecap:butt}
+.tick{fill:none;stroke:var(--tick);stroke-width:54;stroke-dasharray:3 54}
+.xsq{fill:var(--xfill);stroke:var(--xstroke);stroke-width:4}
+.xline{stroke:var(--xstroke);stroke-width:4;opacity:.9}
+.base{fill:var(--basefill);stroke:var(--basestroke);stroke-width:6}
+.oval{fill:var(--basefill);stroke:var(--basestroke);stroke-width:6}
+.lbl{fill:var(--lbl);font-weight:800;font-size:30px;letter-spacing:3px;text-anchor:middle;opacity:.85}
+.cshadow{fill:rgba(0,0,0,.35)}
+.cshine{fill:rgba(255,255,255,.55)}
+.crim{fill:none;stroke:var(--coinrim);stroke-width:3}
+
+/* ---------- THEME A: Neon Arena (glossy, dark) ---------- */
+[data-theme=a]{--bg:radial-gradient(circle at 50% 0%,#2a1b6e,#0b1030 60%);--text:#e9f1ff;--chip:rgba(255,255,255,.08);--chipborder:1px solid rgba(120,200,255,.35);--chipr:12px;--panel:rgba(255,255,255,.07);--panelr:16px;--avbg:#262c66;
+--accent:#4fe3ff;--accenttext:#04162a;--redtext:#ff8aa0;--bluetext:#7ab8ff;
+--board:#101650;--edge:#4fe3ff;--lane:#1c2470;--tick:#0b1030;--xfill:#3a1d86;--xstroke:#ff4fd8;--basefill:rgba(79,227,255,.08);--basestroke:#4fe3ff;--lbl:#9fdcff;--coinrim:rgba(255,255,255,.5);
+--red1:#ffa3b0;--red2:#d1103a;--blue1:#9fd4ff;--blue2:#1a4de0;
+--stick:linear-gradient(90deg,#fff3c4,#f2b84b);--stickr:12px;--stickborder:1px solid #fff;--stickshadow:0 0 14px rgba(255,200,80,.7);--dot:#6a3b00;
+--btn:linear-gradient(180deg,#7af0ff,#1fa7ff);--btntext:#03203a;--btnr:16px;--btnshadow:0 0 18px rgba(79,227,255,.8)}
+[data-theme=a] .edgeG{filter:drop-shadow(0 0 8px #4fe3ff)}
+[data-theme=a] .xsq{filter:drop-shadow(0 0 6px #ff4fd8)}
+[data-theme=a] .coin{filter:drop-shadow(0 0 7px rgba(255,255,255,.35))}
+
+/* ---------- THEME B: Candy Pop (bright 2D) ---------- */
+[data-theme=b]{--bg:linear-gradient(180deg,#ffe9b8,#ffc9de);--text:#3b2a5a;--chip:#fff;--chipborder:3px solid #3b2a5a;--chipr:14px;--panel:#fff;--panelr:18px;--avbg:#ffe27a;
+--accent:#ffd23f;--accenttext:#3b2a5a;--redtext:#e02d4a;--bluetext:#1f6fe0;
+--board:#ffe3b8;--edge:#3b2a5a;--lane:#fff;--tick:#d9c6f2;--xfill:#ffd23f;--xstroke:#3b2a5a;--basefill:#fff6dc;--basestroke:#3b2a5a;--lbl:#3b2a5a;--coinrim:#3b2a5a;
+--red1:#ff7a8e;--red2:#ff3b57;--blue1:#5db8ff;--blue2:#2a7bff;
+--stick:#fff;--stickr:16px;--stickborder:3px solid #3b2a5a;--stickshadow:0 5px 0 #3b2a5a;--dot:#ff3b57;
+--btn:#ff3b57;--btntext:#fff;--btnr:18px;--btnshadow:0 6px 0 #a1182f}
+[data-theme=b] .edgeG{filter:drop-shadow(0 8px 0 rgba(59,42,90,.3))}
+[data-theme=b] .cshine{fill:rgba(255,255,255,.7)}
+[data-theme=b] .cshadow{fill:rgba(59,42,90,.35)}
+[data-theme=b] .boardbg{stroke:#3b2a5a;stroke-width:8}
+
+/* ---------- THEME C: Royal Wood (realistic) ---------- */
+[data-theme=c]{--bg:radial-gradient(circle at 50% 0%,#5a3a22,#1d120a 70%);--text:#f6e6c8;--chip:rgba(0,0,0,.35);--chipborder:1px solid #b98a4a;--chipr:8px;--panel:rgba(0,0,0,.32);--panelr:10px;--avbg:#7a4a22;
+--accent:#e9b95a;--accenttext:#2a1608;--redtext:#e9c48a;--bluetext:#cfcfcf;
+--board:#c99a62;--edge:#3a210d;--lane:#e9cf9c;--tick:#7a4a22;--xfill:#b8862b;--xstroke:#3a210d;--basefill:rgba(58,33,13,.18);--basestroke:#3a210d;--lbl:#3a210d;--coinrim:rgba(0,0,0,.45);
+--red1:#f0d3a0;--red2:#b5844a;--blue1:#5a5a5a;--blue2:#0d0d0d;
+--stick:linear-gradient(90deg,#c99458,#a9743a);--stickr:6px;--stickborder:1px solid #3a210d;--stickshadow:0 4px 8px rgba(0,0,0,.6);--dot:#2a1608;
+--btn:linear-gradient(180deg,#e9b95a,#a9742a);--btntext:#2a1608;--btnr:8px;--btnshadow:0 4px 0 #5a3814}
+[data-theme=c] .boardbg,[data-theme=c] .lanesG{filter:url(#wood)}
+[data-theme=c] .cshine{fill:rgba(255,255,255,.28)}
+</style>
+</head>
+<body>
+<h1>Dhayam &middot; choose a look</h1>
+<p class="sub">Tap a style. Press ROLL to throw the sticks. Tap emojis. This is a mockup, not the real game.</p>
+<div class="tabs" id="tabs">
+  <button data-t="a" class="on">A &middot; Neon Arena</button>
+  <button data-t="b">B &middot; Candy Pop</button>
+  <button data-t="c">C &middot; Royal Wood</button>
+</div>
+<div class="wrap">
+  <div class="phone" id="phone" data-theme="a">
+    <div class="top">
+      <div class="chip">ROOM &nbsp;AB7K</div>
+      <div class="chip" id="turnname">Red &middot; Ravi</div>
+      <div class="timer">24</div>
+    </div>
+    <div class="boardwrap"><svg class="board" id="board" viewBox="0 0 920 1140"></svg></div>
+    <div class="dock">
+      <div class="turn" id="turnbanner">YOUR TURN &mdash; roll the sticks!</div>
+      <div class="teams">
+        <div class="team red"><h3><span>RED TEAM</span><span>3 / 5</span></h3><div class="avs">
+          <div class="av speak">&#129418;</div><div class="av">&#128047;</div><div class="av">&#128060;</div><div class="av empty">&#10133;</div><div class="av empty">&#10133;</div></div></div>
+        <div class="team blue"><h3><span>BLUE TEAM</span><span>2 / 5</span></h3><div class="avs">
+          <div class="av">&#128025;</div><div class="av">&#129417;</div><div class="av empty">&#10133;</div><div class="av empty">&#10133;</div><div class="av empty">&#10133;</div></div></div>
+      </div>
+      <div class="diceRow">
+        <div class="sticks"><div class="stick" id="s1"></div><div class="stick" id="s2"></div></div>
+        <div class="res"><div class="big" id="sum">?</div><div class="small" id="msg">Press ROLL</div><div class="collected" id="coll"></div></div>
+        <button class="rollbtn" id="roll">ROLL</button>
+      </div>
+      <div class="tools">
+        <button class="mic" id="mic" title="Team voice (tap to mute)">&#127908;</button>
+        <div class="emojis" id="emojis"><button>&#128514;</button><button>&#128545;</button><button>&#127881;</button><button>&#128079;</button><button>&#128557;</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+const NOTES={
+a:`<h2>A &middot; Neon Arena</h2>Glossy, dark and glowing, like a modern esports game. Coins shine, lanes glow, and effects pop when you capture.<ul><li>Most &ldquo;current gen&rdquo; feel</li><li>Looks great on OLED phones</li><li>Needs a little more care to run smoothly on cheap phones</li></ul><span class="tag">Wow factor: high &middot; Effort: medium-high</span>`,
+b:`<h2>B &middot; Candy Pop</h2>Bright, friendly, chunky 2D with bold outlines. Think popular mobile party games. Confetti, bouncy animations.<ul><li>Easiest to read on small screens</li><li>Runs smoothly on almost any phone</li><li>Great for families and kids</li></ul><span class="tag">Wow factor: medium-high &middot; Effort: low-medium</span>`,
+c:`<h2>C &middot; Royal Wood</h2>Your physical board brought to life: wood grain, brass checkpoints, tan and black wooden coins, wooden sticks. Warm and traditional.<ul><li>Matches the real Dhayam feel</li><li>Calm, premium look</li><li>Less flashy; effects are subtler</li></ul><span class="tag">Wow factor: medium &middot; Effort: medium</span>`
+};
+
+/* ---- build the board (coordinates follow your photo) ---- */
+const lanes=[
+ [[95,58],[785,58]],[[440,58],[440,362]],[[85,362],[805,362]],
+ [[75,362],[75,1062]],[[805,362],[805,1062]],[[75,1062],[805,1062]],
+ [[440,362],[440,700]],[[190,465],[190,805]],[[715,450],[715,795]],
+ [[190,465],[440,700]],[[715,450],[440,700]],[[385,415],[505,415]]
+];
+const xs=[[95,58],[440,58],[785,58],[85,362],[440,362],[805,362],[385,415],[505,415],
+ [75,710],[805,710],[75,1062],[440,1062],[805,1062],[190,465],[190,805],[715,450],[715,795],[440,700]];
+const pts=l=>l.map(p=>p.join(',')).join(' ');
+function ring(cx,cy){const o=[[0,0]];
+  for(let i=0;i<4;i++){const a=i*Math.PI/2+.4;o.push([Math.cos(a)*28,Math.sin(a)*28])}
+  for(let i=0;i<7;i++){const a=i*2*Math.PI/7;o.push([Math.cos(a)*66,Math.sin(a)*66])}
+  return o.slice(0,12).map(p=>[cx+p[0],cy+p[1]])}
+const coin=(x,y,t)=>`<g class="coin" transform="translate(${x} ${y})"><ellipse class="cshadow" cx="3" cy="9" rx="22" ry="11"/><circle r="22" fill="url(#g-${t})"/><circle class="crim" r="22"/><ellipse class="cshine" cx="-7" cy="-9" rx="9" ry="5"/></g>`;
+function buildBoard(){
+ let s=`<defs>
+ <radialGradient id="g-red" cx=".35" cy=".3" r=".9"><stop offset="0" style="stop-color:var(--red1)"/><stop offset="1" style="stop-color:var(--red2)"/></radialGradient>
+ <radialGradient id="g-blue" cx=".35" cy=".3" r=".9"><stop offset="0" style="stop-color:var(--blue1)"/><stop offset="1" style="stop-color:var(--blue2)"/></radialGradient>
+ <filter id="wood" filterUnits="userSpaceOnUse" x="0" y="0" width="920" height="1140"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.22" numOctaves="3" seed="7" result="t"/><feColorMatrix in="t" type="matrix" values="0.45 0 0 0 0.55  0.45 0 0 0 0.55  0.45 0 0 0 0.55  0 0 0 0 1" result="g"/><feBlend in="SourceGraphic" in2="g" mode="multiply"/></filter>
+ </defs>
+ <rect class="boardbg" x="8" y="8" width="904" height="1124" rx="40"/>`;
+ s+=`<g class="lanesG"><g class="edgeG">${lanes.map(l=>`<polyline class="edge" points="${pts(l)}"/>`).join('')}</g>`;
+ s+=lanes.map(l=>`<polyline class="lane" points="${pts(l)}"/>`).join('');
+ s+=lanes.map(l=>`<polyline class="tick" points="${pts(l)}"/>`).join('');
+ s+=xs.map(([x,y])=>`<g><rect class="xsq" x="${x-27}" y="${y-27}" width="54" height="54" rx="6"/><line class="xline" x1="${x-27}" y1="${y-27}" x2="${x+27}" y2="${y+27}"/><line class="xline" x1="${x+27}" y1="${y-27}" x2="${x-27}" y2="${y+27}"/></g>`).join('');
+ s+=`</g>`;
+ s+=`<circle class="base" cx="230" cy="215" r="110"/><circle class="base" cx="640" cy="215" r="110"/>`;
+ s+=`<ellipse class="oval" cx="455" cy="900" rx="170" ry="105"/>`;
+ s+=`<text class="lbl" x="230" y="112" font-size="26">RED BASE</text><text class="lbl" x="640" y="112" font-size="26">BLUE BASE</text><text class="lbl" x="455" y="925">FINISH</text>`;
+ ring(230,225).forEach(p=>s+=coin(p[0],p[1],'red'));
+ ring(640,225).forEach(p=>s+=coin(p[0],p[1],'blue'));
+ [[205,58,'red'],[330,58,'red'],[690,58,'blue'],[575,58,'blue'],[805,520,'red'],[805,600,'blue'],[75,820,'blue'],[75,560,'red'],[440,250,'red'],[440,170,'blue'],
+  [395,880,'red'],[440,860,'red'],[490,885,'blue'],[540,865,'blue']].forEach(c=>s+=coin(c[0],c[1],c[2]));
+ document.getElementById('board').innerHTML=s}
+buildBoard();
+
+/* ---- tabs ---- */
+const phone=document.getElementById('phone'),note=document.getElementById('note');
+function setTheme(t){phone.dataset.theme=t;note.innerHTML=NOTES[t];
+ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
+document.getElementById('tabs').addEventListener('click',e=>{if(e.target.dataset.t)setTheme(e.target.dataset.t)});
+setTheme('a');
+
+/* ---- dice ---- */
+function face(n){return n===0?'<div class="zero"></div>':'<div class="dot"></div>'.repeat(n)}
+const s1=document.getElementById('s1'),s2=document.getElementById('s2');
+s1.innerHTML=face(2);s2.innerHTML=face(1);
+let coll=[],busy=false;
+const bonus=n=>[1,5,6,12].includes(n);
+document.getElementById('roll').onclick=()=>{
+ if(busy)return;busy=true;
+ s1.classList.add('roll');s2.classList.add('roll');
+ const iv=setInterval(()=>{s1.innerHTML=face(Math.floor(Math.random()*4));s2.innerHTML=face(Math.floor(Math.random()*4))},90);
+ setTimeout(()=>{clearInterval(iv);
+  const a=Math.floor(Math.random()*4),b=Math.floor(Math.random()*4);
+  s1.innerHTML=face(a);s2.innerHTML=face(b);s1.classList.remove('roll');s2.classList.remove('roll');
+  let sum=a+b; if(sum===0)sum=12;
+  document.getElementById('sum').textContent=sum;
+  coll.push(sum);
+  const c=document.getElementById('coll');
+  if(bonus(sum)){document.getElementById('msg').textContent='Bonus roll! Roll again';}
+  else{document.getElementById('msg').textContent='Now spend: '+coll.join(', ');setTimeout(()=>{coll=[];c.innerHTML=''},2500)}
+  c.innerHTML=coll.map(n=>`<span>${n}</span>`).join('');
+  busy=false},900)};
+
+/* ---- emoji + mic ---- */
+document.getElementById('emojis').addEventListener('click',e=>{
+ if(e.target.tagName!=='BUTTON')return;
+ const f=document.createElement('div');f.className='floaty';f.textContent=e.target.textContent;
+ f.style.left=(20+Math.random()*60)+'%';f.style.top='55%';phone.appendChild(f);setTimeout(()=>f.remove(),1700)});
+document.getElementById('mic').onclick=e=>{e.currentTarget.classList.toggle('mute');
+ e.currentTarget.textContent=e.currentTarget.classList.contains('mute')?'🔇':'🎤'};
+</script>
+</body>
+</html>
