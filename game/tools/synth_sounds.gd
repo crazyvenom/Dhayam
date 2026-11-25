@@ -45,6 +45,11 @@ func _init() -> void:
 	game("win", s_win())
 	game("tick", s_tick())
 
+	# ---- background music (loops seamlessly) ----
+	var music: PackedFloat32Array = music_loop()
+	save(music, game_dir.path_join("bgm.wav"), 0.85)
+	save(music, mock_dir.path_join("bgm.wav"), 0.85)
+
 	# ---- intro sting options (timeline: tiles fly 0.1-2.0s, S at 1.7s, name 2.1s, TECH 2.4s) ----
 	save(intro_a(), mock_dir.path_join("intro_a.wav"))
 	save(intro_b(), mock_dir.path_join("intro_b.wav"))
@@ -65,7 +70,7 @@ func buf(sec: float) -> PackedFloat32Array:
 
 ## A pitched tone. f1 >= 0 glides from f0 to f1. Envelope: quick attack, exponential decay.
 func tone(b: PackedFloat32Array, start: float, dur: float, f0: float, vol: float, wave: String = "sine",
-		f1: float = -1.0, attack: float = 0.004, decay_k: float = 6.0) -> void:
+		f1: float = -1.0, attack: float = 0.004, decay_k: float = 6.0, release: float = 0.008) -> void:
 	var s0: int = int(start * RATE)
 	var n: int = int(dur * RATE)
 	var phase: float = 0.0
@@ -87,7 +92,7 @@ func tone(b: PackedFloat32Array, start: float, dur: float, f0: float, vol: float
 				w = fposmod(phase / TAU, 1.0) * 2.0 - 1.0
 			_:
 				w = sin(phase)
-		var env: float = minf(t / attack, 1.0) * exp(-decay_k * u)
+		var env: float = minf(t / attack, 1.0) * exp(-decay_k * u) * minf(float(n - i) / (release * RATE), 1.0)
 		b[idx] += w * env * vol
 
 
@@ -301,6 +306,77 @@ func s_tick() -> PackedFloat32Array:
 	var b: PackedFloat32Array = buf(0.06)
 	tone(b, 0.0, 0.04, 1300.0, 0.8, "sine", -1.0, 0.001, 7.0)
 	return b
+
+
+# ------------------------------------------------------------------ background music
+
+## A calm neon-synth loop in A minor, 100 BPM, 16 bars (about 38 seconds).
+## Layers: soft pad, bass, plucky arpeggio with echo, light drums that join after 4 bars.
+func music_loop() -> PackedFloat32Array:
+	seed(77)
+	var beat: float = 0.6
+	var bar: float = beat * 4.0
+	var bars: int = 16
+	var loop_len: float = bar * bars
+	var tail: float = 2.5
+	var pad: PackedFloat32Array = buf(loop_len + tail)
+	var bass: PackedFloat32Array = buf(loop_len + tail)
+	var arp: PackedFloat32Array = buf(loop_len + tail)
+	var drums: PackedFloat32Array = buf(loop_len + tail)
+
+	# Am - F - C - G, two bars each, played twice
+	var chords: Array = [
+		[220.0, 261.63, 329.63, 110.0],
+		[174.61, 220.0, 261.63, 87.31],
+		[261.63, 329.63, 392.0, 130.81],
+		[196.0, 246.94, 293.66, 98.0],
+	]
+	for c in 8:
+		var ch: Array = chords[c % 4]
+		var t0: float = c * 2.0 * bar
+		# pad: three sustained notes, overlapping slightly with the next chord
+		for k in 3:
+			tone(pad, t0, 2.0 * bar + 0.5, ch[k], 0.16, "tri", -1.0, 0.7, 0.6, 0.5)
+			tone(pad, t0, 2.0 * bar + 0.5, ch[k] * 2.0, 0.05, "sine", -1.0, 0.9, 0.6, 0.5)
+		# bass from bar 5
+		if c >= 2:
+			for bi in 2:
+				var tb: float = t0 + bi * bar
+				for p in [0.0, 1.5, 2.0, 3.5]:
+					tone(bass, tb + p * beat, 0.34, ch[3], 0.55, "sine", -1.0, 0.005, 4.0, 0.03)
+		# arpeggio: 16th notes over the chord (an octave higher in the second half)
+		var oct: float = 1.0 if c < 4 else 2.0
+		var order: Array = [0, 1, 2, 1, 2, 1, 0, 1]
+		for s in 32:
+			var note: float = ch[order[s % 8]] * 2.0 * oct
+			var ta: float = t0 + s * beat * 0.25
+			tone(arp, ta, 0.22, note, 0.14, "tri", -1.0, 0.003, 7.0, 0.02)
+
+	# drums from bar 5: kick on 1 and 3, soft clap on 2 and 4, hats on every 8th
+	for br in range(4, bars):
+		var tb2: float = br * bar
+		for k in [0, 2]:
+			tone(drums, tb2 + k * beat, 0.25, 140.0, 0.7, "sine", 45.0, 0.002, 6.0, 0.02)
+		for k in [1, 3]:
+			noise(drums, tb2 + k * beat, 0.12, 0.22, 0.9, 6.0, true)
+		for e in 8:
+			noise(drums, tb2 + e * beat * 0.5, 0.04, 0.09 if e % 2 == 1 else 0.06, 1.0, 6.0, true)
+
+	echo(arp, beat * 0.75, 0.32)
+
+	# mix, then fold the tail back onto the start so the loop has no seam
+	var total: int = int(loop_len * RATE)
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(total)
+	var mixed: PackedFloat32Array = PackedFloat32Array()
+	mixed.resize(pad.size())
+	for i in pad.size():
+		mixed[i] = pad[i] + bass[i] + arp[i] + drums[i]
+	for i in total:
+		out[i] = mixed[i]
+	for i in range(total, mixed.size()):
+		out[i - total] += mixed[i]
+	return out
 
 
 # ------------------------------------------------------------------ intro sting options (3.6 s)

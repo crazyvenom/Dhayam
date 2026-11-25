@@ -13,13 +13,27 @@ const VOLUME: Dictionary = {
 	"roll_12": -1.0, "fail": -5.0, "win": -1.0, "tick": -10.0,
 }
 
+const MUSIC_DB: float = -15.0
+
 var muted: bool = false
 var _streams: Dictionary = {}
 var _players: Array = []
 var _next: int = 0
+var _music: AudioStreamPlayer
 
 
 func _ready() -> void:
+	Settings.load_settings()
+	muted = not Settings.sfx_on
+	if ResourceLoader.exists("res://audio/bgm.wav"):
+		var s: AudioStreamWAV = load("res://audio/bgm.wav") as AudioStreamWAV
+		s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		s.loop_begin = 0
+		s.loop_end = int(s.data.size() / 2.0)
+		_music = AudioStreamPlayer.new()
+		_music.stream = s
+		_music.volume_db = MUSIC_DB
+		add_child(_music)
 	for n in NAMES:
 		var path: String = "res://audio/%s.wav" % n
 		if ResourceLoader.exists(path):
@@ -39,6 +53,31 @@ func play(sound: String, pitch: float = 1.0) -> void:
 	p.volume_db = VOLUME.get(sound, 0.0)
 	p.pitch_scale = pitch
 	p.play()
+
+
+func start_music() -> void:
+	if _music != null:
+		_music.volume_db = MUSIC_DB
+		_music.play()
+		_music.stream_paused = not Settings.music_on
+
+
+func set_music(on: bool) -> void:
+	Settings.music_on = on
+	Settings.save_settings()
+	if _music != null:
+		_music.stream_paused = not on
+
+
+func set_sfx(on: bool) -> void:
+	muted = not on
+	Settings.sfx_on = on
+	Settings.save_settings()
+
+
+func fade_music(seconds: float) -> void:
+	if _music != null:
+		create_tween().tween_property(_music, "volume_db", -45.0, seconds)
 
 
 ## The sound for a dice result: 1, 5, 6 and 12 each have their own; everything else is a soft tok.

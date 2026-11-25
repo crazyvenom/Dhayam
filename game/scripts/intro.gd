@@ -18,7 +18,8 @@ func _ready() -> void:
 		return
 	_build()
 	# Intro sound: plays if audio/intro.wav exists (the chosen sting is copied there)
-	if ResourceLoader.exists("res://audio/intro.wav"):
+	Settings.load_settings()
+	if Settings.sfx_on and ResourceLoader.exists("res://audio/intro.wav"):
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		player.stream = load("res://audio/intro.wav")
 		player.volume_db = -3.0

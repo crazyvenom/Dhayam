@@ -25,6 +25,7 @@ var sfx: Sfx
 func _ready() -> void:
 	sfx = Sfx.new()
 	add_child(sfx)
+	sfx.start_music()
 	board = BoardView.new()
 	board.gs = gs
 	board.position = BOARD_POS
@@ -149,6 +150,16 @@ func _build_ui() -> void:
 	add_child(chips_box)
 
 	status_lbl = _label("", Vector2(10, 924), Vector2(520, 30), 16, Color(1, 1, 1, 0.85))
+
+	# Sound buttons (top right): music on/off and sound effects on/off, remembered between sessions
+	var music_btn: ToggleIcon = ToggleIcon.new("music", Settings.music_on)
+	music_btn.position = Vector2(432, 12)
+	music_btn.toggled_state.connect(func(on: bool) -> void: sfx.set_music(on))
+	add_child(music_btn)
+	var sfx_btn: ToggleIcon = ToggleIcon.new("sfx", Settings.sfx_on)
+	sfx_btn.position = Vector2(484, 12)
+	sfx_btn.toggled_state.connect(func(on: bool) -> void: sfx.set_sfx(on))
+	add_child(sfx_btn)
 
 
 func _set_status(text: String) -> void:
@@ -426,6 +437,7 @@ func _finish_spend() -> void:
 
 func _show_win() -> void:
 	busy = true
+	sfx.fade_music(1.2)
 	sfx.play("win")
 	var is_red: bool = gs.winner == 0
 	var col: Color = RED_COL if is_red else BLUE_COL
