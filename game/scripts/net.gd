@@ -53,6 +53,8 @@ func _start_server() -> void:
 
 
 func send_to(peer: int, method: String, args: Array = []) -> void:
+	if not multiplayer.get_peers().has(peer):
+		return                                  # that player already disconnected
 	callv("rpc_id", [peer, method] + args)
 
 

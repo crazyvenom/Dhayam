@@ -69,6 +69,15 @@ The route has two separate layers.
 ## 11. Extras for version 1
 Emoji reactions, sound effects and music, avatars and customization, rematch, team-only always-on voice chat (with mute), text/emoji chat for everyone.
 
+## 12. How online play works (implemented)
+- The **server decides every dice throw** and checks every move; phones only send requests (roll, move) and then show what the server confirms.
+- Turn order: Red player 1, Blue player 1, Red player 2, Blue player 2 ... Each team rotates through its own players. Only the player whose turn it is can roll or move.
+- **Unlocking (first 1) is per player.**
+- If a player **disconnects**, a computer player plays their turns. When they come back (same phone) they get their seat back and the game catches up.
+- **Turn timer** (host chooses Off / 15 / 30 / 60 s): when time runs out, the computer plays the rest of that turn.
+- The host can press **Play again** after a game; everyone returns to the lobby with the same teams.
+- Room codes are 4 characters (letters and numbers without confusing ones like 0/O and 1/I).
+
 ---
 
 ## Open items (to settle before coding)

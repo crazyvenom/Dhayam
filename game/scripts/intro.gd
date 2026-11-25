@@ -131,4 +131,4 @@ func _s_points() -> PackedVector2Array:
 
 
 func _go() -> void:
-	get_tree().change_scene_to_file("res://main.tscn")
+	get_tree().change_scene_to_file("res://menu.tscn")

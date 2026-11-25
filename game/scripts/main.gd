@@ -1,13 +1,15 @@
 extends Node2D
-## Dhayam - first playable (two teams on one screen, taking turns).
+## The Dhayam game screen. It works the same way on one phone and online:
+## every dice throw and move is an "action". Online, the server decides the dice and sends the
+## same actions to every phone; this screen applies them to the rules engine and animates them.
 
 const BOARD_SCALE: float = 0.57
 const BOARD_POS: Vector2 = Vector2(14.0, 74.0)
-const RED_COL: Color = Color(1.0, 0.45, 0.55)
-const BLUE_COL: Color = Color(0.45, 0.70, 1.0)
-const CYAN: Color = Color(0.31, 0.89, 1.0)
+const RED_COL: Color = UI.RED_COL
+const BLUE_COL: Color = UI.BLUE_COL
+const CYAN: Color = UI.CYAN
 
-var gs: GameState = GameState.new()
+var gs: GameState
 var board: BoardView
 var coins: Array = [[], []]
 var chips_box: HBoxContainer
@@ -17,12 +19,26 @@ var turn_lbl: Label
 var sum_lbl: Label
 var stick1: StickView
 var stick2: StickView
-var selected: int = -1       # index into gs.collected
-var busy: bool = false
+var banner: Label
+var exit_btn: Button
 var sfx: Sfx
+
+var queue: Array = []            # actions waiting to be played
+var processing: bool = false     # an action is being animated
+var chips_view: Array = []       # the collected numbers as currently shown
+var selected: int = -1           # chosen number (index into chips_view)
+var awaiting: bool = false       # online: asked the server, waiting for its answer
+var _await_id: int = 0
+var _actions_applied: int = 0
+var _exit_armed: bool = false
+var _auto_turns: int = 0
 
 
 func _ready() -> void:
+	Settings.load_settings()
+	if Session.roster.is_empty():
+		Session.start_local()
+	gs = GameState.new(Session.teams())
 	sfx = Sfx.new()
 	add_child(sfx)
 	sfx.start_music()
@@ -39,16 +55,33 @@ func _ready() -> void:
 			board.add_child(coin)
 			coins[t].append(coin)
 	_build_ui()
+	# Joining or re-joining a game in progress: replay everything that happened, instantly
+	var lg: PackedInt32Array = Session.replay_log
+	for i in range(0, lg.size(), 3):
+		if lg[i] == 0:
+			gs.apply_roll(lg[i + 1], lg[i + 2])
+		else:
+			gs.apply_move(lg[i + 1], lg[i + 2])
+		_actions_applied += 1
+	Session.replay_log = PackedInt32Array()
 	_refresh_all(false)
-	_begin_turn()
-	# Fade in from black (the intro fades out to black)
+	_sync_ui()
+	if gs.winner >= 0:
+		_show_win(gs.winner)
+	if Session.online:
+		Net.action_received.connect(_on_net_action)
+		Net.room_updated.connect(_on_net_room)
+		Net.game_started.connect(_on_net_started)
+		Net.connection_lost.connect(_on_net_lost)
+		Net.error_received.connect(func(t: String) -> void: _set_status(t))
+	# Fade in from black (the intro and menu fade out to black)
 	modulate = Color(0, 0, 0, 1)
 	create_tween().tween_property(self, "modulate", Color.WHITE, 0.5)
 	# Developer test modes (only active when these environment variables are set)
 	if OS.has_environment("DHAYAM_AUTOPLAY"):
 		Engine.time_scale = 8.0
 		_autoplay()
-	if OS.has_environment("DHAYAM_SHOT"):
+	if OS.has_environment("DHAYAM_SHOT") and (OS.has_environment("DHAYAM_AUTOPLAY") or OS.has_environment("DHAYAM_LOCAL")):
 		var secs: float = float(OS.get_environment("DHAYAM_SECONDS")) if OS.has_environment("DHAYAM_SECONDS") else 0.6
 		await get_tree().create_timer(secs, true, false, true).timeout
 		get_viewport().get_texture().get_image().save_png(OS.get_environment("DHAYAM_SHOT"))
@@ -56,70 +89,30 @@ func _ready() -> void:
 		get_tree().quit()
 
 
-var _auto_turns: int = 0
-
-
 func _autoplay() -> void:
 	while true:
 		await get_tree().create_timer(0.05, true, false, true).timeout
-		if busy or gs.phase == "over":
+		if processing or awaiting or gs.winner >= 0:
 			continue
 		if gs.phase == "roll":
 			_auto_turns += 1
-			_on_roll()
+			_on_roll_pressed()
 		elif gs.phase == "spend":
-			var options: Array = []
-			for c in 12:
-				if coins[gs.turn][c].movable:
-					options.append(c)
-			if options.size() > 0:
-				_play_move(options[randi() % options.size()])
+			var bm: Dictionary = gs.best_move()
+			if not bm.is_empty():
+				selected = bm["chip"]
+				_request_move(bm["coin"])
 
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 540, 960), Color(0.043, 0.063, 0.188))
-	draw_circle(Vector2(270, -60), 430.0, Color(0.17, 0.11, 0.43, 0.55))
-	draw_circle(Vector2(270, 1000), 360.0, Color(0.10, 0.20, 0.50, 0.30))
+	UI.draw_background(self)
 
 
 # ------------------------------------------------------------------ UI
 
-func _label(text: String, pos: Vector2, sz: Vector2, font_size: int, col: Color) -> Label:
-	var l: Label = Label.new()
-	l.text = text
-	l.position = pos
-	l.size = sz
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", col)
-	add_child(l)
-	return l
-
-
-func _style(bg: Color, border: Color, radius: int = 14) -> StyleBoxFlat:
-	var s: StyleBoxFlat = StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(2)
-	s.set_corner_radius_all(radius)
-	s.shadow_color = Color(border.r, border.g, border.b, 0.45)
-	s.shadow_size = 8
-	return s
-
-
-func _style_button(b: Button, bg: Color, border: Color, text_col: Color) -> void:
-	for state in ["normal", "hover", "pressed", "focus"]:
-		b.add_theme_stylebox_override(state, _style(bg, border))
-	b.add_theme_stylebox_override("disabled", _style(bg.darkened(0.55), border.darkened(0.6)))
-	for cname in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(cname, text_col)
-	b.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.35))
-
-
 func _build_ui() -> void:
-	_label("DHAYAM", Vector2(0, 6), Vector2(540, 28), 22, Color(0.62, 0.86, 1.0, 0.8))
-	turn_lbl = _label("", Vector2(0, 34), Vector2(540, 36), 26, RED_COL)
+	UI.label(self, "DHAYAM", Vector2(0, 6), Vector2(540, 28), 22, Color(0.62, 0.86, 1.0, 0.8))
+	turn_lbl = UI.label(self, "", Vector2(60, 34), Vector2(420, 36), 26, RED_COL)
 
 	stick1 = StickView.new()
 	stick1.position = Vector2(34, 758)
@@ -130,17 +123,11 @@ func _build_ui() -> void:
 	stick1.set_value(2)
 	stick2.set_value(1)
 
-	sum_lbl = _label("?", Vector2(150, 752), Vector2(120, 100), 72, CYAN)
-	_label("RESULT", Vector2(150, 842), Vector2(120, 20), 12, Color(1, 1, 1, 0.5))
+	sum_lbl = UI.label(self, "?", Vector2(150, 752), Vector2(120, 100), 72, CYAN)
+	UI.label(self, "RESULT", Vector2(150, 842), Vector2(120, 20), 12, Color(1, 1, 1, 0.5))
 
-	roll_btn = Button.new()
-	roll_btn.text = "ROLL"
-	roll_btn.position = Vector2(300, 765)
-	roll_btn.size = Vector2(210, 90)
-	roll_btn.add_theme_font_size_override("font_size", 34)
-	_style_button(roll_btn, Color(0.12, 0.65, 1.0), CYAN, Color(0.02, 0.1, 0.22))
-	roll_btn.pressed.connect(_on_roll)
-	add_child(roll_btn)
+	roll_btn = UI.button(self, "ROLL", Vector2(300, 765), Vector2(210, 90), 34)
+	roll_btn.pressed.connect(_on_roll_pressed)
 
 	chips_box = HBoxContainer.new()
 	chips_box.position = Vector2(20, 878)
@@ -149,7 +136,7 @@ func _build_ui() -> void:
 	chips_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(chips_box)
 
-	status_lbl = _label("", Vector2(10, 924), Vector2(520, 30), 16, Color(1, 1, 1, 0.85))
+	status_lbl = UI.label(self, "", Vector2(10, 924), Vector2(520, 30), 16, Color(1, 1, 1, 0.85))
 
 	# Sound buttons (top right): music on/off and sound effects on/off, remembered between sessions
 	var music_btn: ToggleIcon = ToggleIcon.new("music", Settings.music_on)
@@ -161,37 +148,99 @@ func _build_ui() -> void:
 	sfx_btn.toggled_state.connect(func(on: bool) -> void: sfx.set_sfx(on))
 	add_child(sfx_btn)
 
+	exit_btn = UI.button(self, "EXIT", Vector2(12, 14), Vector2(86, 42), 16,
+		Color(0.09, 0.13, 0.38), Color(0.5, 0.6, 0.9), Color.WHITE)
+	exit_btn.pressed.connect(_on_exit)
+
+	banner = UI.label(self, "", Vector2(30, 380), Vector2(480, 120), 26, Color.WHITE)
+	banner.add_theme_stylebox_override("normal", UI.box(Color(0.05, 0.05, 0.2, 0.95), UI.PINK, 18, 12.0))
+	banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	banner.z_index = 80
+	banner.visible = false
+
 
 func _set_status(text: String) -> void:
 	status_lbl.text = text
 
 
+func _player_name(p: int) -> String:
+	if p >= 0 and p < Session.roster.size():
+		return str(Session.roster[p]["name"])
+	return "?"
+
+
+func _show_turn_label(team: int, player: int) -> void:
+	var col: Color = RED_COL if team == 0 else BLUE_COL
+	var t: String
+	if Session.online and player == Session.my_player():
+		t = "YOUR TURN"
+	else:
+		t = "%s'S TURN" % _player_name(player).to_upper()
+	turn_lbl.text = t
+	turn_lbl.add_theme_color_override("font_color", col)
+
+
 func _refresh_chips() -> void:
 	for ch in chips_box.get_children():
 		ch.queue_free()
-	for i in gs.collected.size():
-		var v: int = gs.collected[i]
+	for i in chips_view.size():
 		var b: Button = Button.new()
-		b.text = str(v)
+		b.text = str(chips_view[i])
 		b.custom_minimum_size = Vector2(56, 42)
 		b.add_theme_font_size_override("font_size", 22)
-		var is_sel: bool = (i == selected)
-		if is_sel:
-			_style_button(b, Color(0.31, 0.89, 1.0), Color(1, 1, 1), Color(0.02, 0.1, 0.22))
+		if i == selected:
+			UI.style_button(b, Color(0.31, 0.89, 1.0), Color(1, 1, 1), Color(0.02, 0.1, 0.22))
 		else:
-			_style_button(b, Color(0.14, 0.18, 0.5), CYAN, Color(1, 1, 1))
+			UI.style_button(b, Color(0.14, 0.18, 0.5), CYAN, Color.WHITE)
 		b.pressed.connect(_on_chip.bind(i))
 		chips_box.add_child(b)
 
 
+func _is_my_turn() -> bool:
+	return (not Session.online) or gs.active == Session.my_player()
+
+
 func _update_movable() -> void:
+	var legal: Array = []
+	if _is_my_turn() and not processing and not awaiting and gs.phase == "spend" \
+			and selected >= 0 and selected < gs.collected.size():
+		legal = gs.legal_coins(selected)
 	for t in 2:
 		for c in 12:
-			var coin: Coin = coins[t][c]
-			var can: bool = false
-			if gs.phase == "spend" and t == gs.turn and selected >= 0 and selected < gs.collected.size():
-				can = gs.can_move(t, c, gs.collected[selected])
-			coin.movable = can
+			(coins[t][c] as Coin).movable = (t == gs.turn and legal.has(c))
+
+
+## Show the real current state: whose turn, what to do, which buttons work.
+func _sync_ui() -> void:
+	_show_turn_label(gs.turn, gs.active)
+	chips_view = gs.collected.duplicate()
+	var mine: bool = _is_my_turn()
+	roll_btn.disabled = not (mine and gs.phase == "roll" and not awaiting)
+	if mine and gs.phase == "spend":
+		_auto_select()
+	else:
+		selected = -1
+	_refresh_chips()
+	_update_movable()
+	if gs.winner >= 0:
+		return
+	if mine:
+		if gs.phase == "roll":
+			_set_status("Roll the sticks!" if gs.unlocked[gs.active] else "Roll a 1 to bring out your first coin")
+		else:
+			_set_status("Tap a number, then tap a glowing coin")
+	else:
+		_set_status("%s is playing..." % _player_name(gs.active))
+
+
+func _auto_select() -> void:
+	var ok: bool = selected >= 0 and selected < gs.collected.size() and not gs.legal_coins(selected).is_empty()
+	if not ok:
+		selected = -1
+		for i in gs.collected.size():
+			if not gs.legal_coins(i).is_empty():
+				selected = i
+				break
 
 
 # ------------------------------------------------------------------ coin positions
@@ -257,104 +306,138 @@ func _anim_move(team: int, c: int, from: int, to: int) -> void:
 	coin.z_index = 0
 
 
-# ------------------------------------------------------------------ turn flow
+# ------------------------------------------------------------------ actions and events
 
-func _begin_turn() -> void:
-	busy = false
-	selected = -1
-	_refresh_chips()
-	_update_movable()
-	var is_red: bool = gs.turn == 0
-	turn_lbl.text = "RED'S TURN" if is_red else "BLUE'S TURN"
-	turn_lbl.add_theme_color_override("font_color", RED_COL if is_red else BLUE_COL)
-	roll_btn.disabled = false
-	if gs.unlocked[gs.turn]:
-		_set_status("Roll the sticks!")
-	else:
-		_set_status("Roll a 1 to bring out your first coin")
+func _enqueue(action: Dictionary) -> void:
+	awaiting = false
+	queue.append(action)
+	if not processing:
+		_drain()
 
 
-func _on_roll() -> void:
-	if busy or gs.phase != "roll":
-		return
-	busy = true
+func _drain() -> void:
+	processing = true
 	roll_btn.disabled = true
+	_update_movable()
+	while queue.size() > 0:
+		var a: Dictionary = queue.pop_front()
+		var evs: Array
+		if a["k"] == "roll":
+			evs = gs.apply_roll(a["a"], a["b"])
+		else:
+			evs = gs.apply_move(a["coin"], a["chip"])
+		for e in evs:
+			await _play_event(e)
+		_actions_applied += 1
+		DevTools.check_stop(self, gs, _actions_applied)
+	processing = false
+	_sync_ui()
+
+
+func _play_event(e: Dictionary) -> void:
+	match e["t"]:
+		"roll":
+			await _ev_roll(e)
+		"unlock":
+			await _anim_move(e["team"], e["coin"], -1, 0)
+			_refresh_all(true)
+		"move":
+			await _ev_move(e)
+		"lost":
+			_set_status("No legal move - numbers lost")
+			chips_view = []
+			_refresh_chips()
+			await get_tree().create_timer(1.2).timeout
+		"bonus":
+			_set_status("Bonus roll!")
+			chips_view = []
+			_refresh_chips()
+		"turn":
+			_show_turn_label(e["team"], e["player"])
+			chips_view = []
+			selected = -1
+			_refresh_chips()
+		"win":
+			_show_win(e["team"])
+
+
+func _ev_roll(e: Dictionary) -> void:
 	sfx.play("dice_roll")
 	for i in 9:
 		stick1.set_value(randi() % 4)
 		stick2.set_value(randi() % 4)
 		await get_tree().create_timer(0.1).timeout
-	var a: int = randi() % 4
-	var b: int = randi() % 4
-	stick1.set_value(a)
-	stick2.set_value(b)
-	var v: int = a + b
-	if v == 0:
-		v = 12
+	stick1.set_value(e["a"])
+	stick2.set_value(e["b"])
+	var v: int = e["v"]
 	sum_lbl.text = str(v)
-	var out: Dictionary = gs.on_roll(v)
-	var kind: String = out["kind"]
-	if kind == "fail_locked":
-		sfx.play("fail")
-		_set_status("Not a 1 - the turn passes")
-		await get_tree().create_timer(1.2).timeout
-		gs.next_turn()
-		_begin_turn()
-	elif kind == "unlock":
-		sfx.play_result(v)
-		_set_status("A 1! Your first coin is out - roll again")
-		await _anim_move(gs.turn, out["coin"], -1, 0)
-		_refresh_all(true)
-		busy = false
-		roll_btn.disabled = false
-	elif kind == "more":
-		sfx.play_result(v)
-		_set_status("%d - bonus roll! Roll again" % v)
-		_refresh_chips()
-		busy = false
-		roll_btn.disabled = false
-	else:
-		sfx.play_result(v)
-		_refresh_chips()
-		await _enter_spend()
-
-
-func _has_legal_for(v: int) -> bool:
-	for c in 12:
-		if gs.can_move(gs.turn, c, v):
-			return true
-	return false
-
-
-func _auto_select() -> void:
-	var ok: bool = selected >= 0 and selected < gs.collected.size() and _has_legal_for(gs.collected[selected])
-	if not ok:
-		selected = -1
-		for i in gs.collected.size():
-			if _has_legal_for(gs.collected[i]):
-				selected = i
-				break
+	chips_view = e["chips"]
+	selected = -1
 	_refresh_chips()
-	_update_movable()
+	var who: String = _player_name(e["player"])
+	match e["kind"]:
+		"fail_locked":
+			sfx.play("fail")
+			_set_status("%s needs a 1 to start - the turn passes" % who)
+			await get_tree().create_timer(1.0).timeout
+		"unlock":
+			sfx.play_result(v)
+			_set_status("A 1! %s's first coin is out - roll again" % who)
+		"more":
+			sfx.play_result(v)
+			_set_status("%d - bonus roll! Roll again" % v)
+		_:
+			sfx.play_result(v)
 
 
-func _enter_spend() -> void:
-	busy = true
+func _ev_move(e: Dictionary) -> void:
+	var team: int = e["team"]
+	var to: int = e["to"]
+	await _anim_move(team, e["coin"], e["from"], to)
+	chips_view = e["chips"]
+	selected = -1
+	_refresh_chips()
+	var captured: Array = e["captured"]
+	if captured.size() > 0:
+		sfx.play("capture")
+		_set_status("Captured %d coin(s)! Bonus roll" % captured.size())
+	elif e["finished"]:
+		sfx.play("finish")
+	elif to >= 0 and gs.safe.has(gs.keys[team][to]):
+		sfx.play("safe")
+	_refresh_all(true)
+	await get_tree().create_timer(0.3).timeout
+
+
+# ------------------------------------------------------------------ input
+
+func _set_awaiting() -> void:
+	awaiting = true
+	_await_id += 1
+	var my_id: int = _await_id
 	roll_btn.disabled = true
-	if not gs.any_legal():
-		_set_status("No legal move - numbers lost")
-		await get_tree().create_timer(1.3).timeout
-		_finish_spend()
+	_update_movable()
+	await get_tree().create_timer(3.0).timeout
+	if awaiting and my_id == _await_id:     # the server never answered: let the player try again
+		awaiting = false
+		_sync_ui()
+
+
+func _on_roll_pressed() -> void:
+	if processing or awaiting or gs.phase != "roll" or not _is_my_turn():
 		return
-	_auto_select()
-	_set_status("Tap a number, then tap a glowing coin")
-	busy = false
+	roll_btn.disabled = true
+	if Session.online:
+		_set_awaiting()
+		Net.send("c_roll")
+	else:
+		_enqueue({"k": "roll", "a": randi() % 4, "b": randi() % 4})
 
 
 func _on_chip(i: int) -> void:
-	if busy or gs.phase != "spend" or i >= gs.collected.size():
+	if processing or awaiting or gs.phase != "spend" or not _is_my_turn() or i >= gs.collected.size():
 		return
-	if _has_legal_for(gs.collected[i]):
+	if not gs.legal_coins(i).is_empty():
 		sfx.play("tick")
 		selected = i
 		_refresh_chips()
@@ -363,11 +446,22 @@ func _on_chip(i: int) -> void:
 		_set_status("%d has no legal move right now" % gs.collected[i])
 
 
+func _request_move(coin: int) -> void:
+	if processing or awaiting or gs.phase != "spend" or not _is_my_turn() or selected < 0:
+		return
+	if Session.online:
+		var chip: int = selected
+		_set_awaiting()
+		Net.send("c_move", [coin, chip])
+	else:
+		_enqueue({"k": "move", "coin": coin, "chip": selected})
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	var e: InputEventMouseButton = event as InputEventMouseButton
 	if e == null or not e.pressed or e.button_index != MOUSE_BUTTON_LEFT:
 		return
-	if busy or gs.phase != "spend" or selected < 0:
+	if processing or awaiting or gs.phase != "spend" or selected < 0 or not _is_my_turn():
 		return
 	var lp: Vector2 = board.to_local(e.position)
 	var best: int = -1
@@ -381,80 +475,94 @@ func _unhandled_input(event: InputEvent) -> void:
 			best_d = d
 			best = c
 	if best >= 0:
-		_play_move(best)
+		_request_move(best)
 
 
-func _play_move(c: int) -> void:
-	busy = true
-	var team: int = gs.turn
-	var v: int = gs.collected[selected]
-	var res: Dictionary = gs.do_move(team, c, v)
-	gs.collected.remove_at(selected)
-	selected = -1
-	_update_movable()
-	_refresh_chips()
-	await _anim_move(team, c, res["from"], res["to"])
-	var captured: Array = res["captured"]
-	var landed: int = res["to"]
-	if captured.size() > 0:
-		sfx.play("capture")
-		_set_status("Captured %d coin(s)! You get a bonus roll" % captured.size())
-	elif landed == gs.n_sq:
-		sfx.play("finish")
-	elif landed >= 0 and gs.safe.has(gs.keys[team][landed]):
-		sfx.play("safe")
-	_refresh_all(true)
-	await get_tree().create_timer(0.35).timeout
-	if gs.winner >= 0:
-		_show_win()
+func _on_exit() -> void:
+	if Session.online and not _exit_armed and gs.winner < 0:
+		_exit_armed = true
+		exit_btn.text = "SURE?"
+		await get_tree().create_timer(2.5).timeout
+		_exit_armed = false
+		exit_btn.text = "EXIT"
 		return
-	if gs.collected.is_empty() or not gs.any_legal():
-		if not gs.collected.is_empty():
-			_set_status("No more legal moves - leftover numbers lost")
-			await get_tree().create_timer(1.0).timeout
-		_finish_spend()
+	_leave_to_menu()
+
+
+func _leave_to_menu() -> void:
+	if Session.online:
+		Net.disconnect_from_server()
+	Session.online = false
+	Session.info = {}
+	get_tree().change_scene_to_file("res://menu.tscn")
+
+
+# ------------------------------------------------------------------ online events
+
+func _on_net_action(a: Dictionary) -> void:
+	if is_inside_tree():
+		_enqueue(a)
+
+
+func _on_net_room(info: Dictionary) -> void:
+	if not is_inside_tree():
 		return
-	_auto_select()
-	_set_status("Tap a number, then tap a glowing coin")
-	busy = false
+	Session.info = info
+	if not info["started"]:               # the host chose "play again": back to the lobby
+		get_tree().change_scene_to_file("res://lobby.tscn")
 
 
-func _finish_spend() -> void:
-	gs.collected.clear()
-	selected = -1
-	_refresh_chips()
-	_update_movable()
-	if gs.bonus_pending > 0:
-		gs.bonus_pending -= 1
-		gs.phase = "roll"
-		busy = false
-		roll_btn.disabled = false
-		_set_status("Bonus roll for the capture!")
-	else:
-		gs.next_turn()
-		_begin_turn()
+func _on_net_started(start: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	Session.set_online_start(start)       # we re-joined: rebuild the screen from the full history
+	get_tree().reload_current_scene()
 
 
-func _show_win() -> void:
-	busy = true
+func _on_net_lost() -> void:
+	if not is_inside_tree():
+		return
+	banner.text = "Connection lost\nReconnecting..."
+	banner.visible = true
+	for i in 24:
+		await get_tree().create_timer(2.5).timeout
+		if Net.online:
+			return
+		Net.connect_then(func() -> void:
+			Net.send("c_join", [Session.code, Settings.player_name, Settings.avatar, Settings.token]))
+	banner.text = "Could not reconnect"
+	await get_tree().create_timer(2.0).timeout
+	Session.info = {"lost_msg": "Connection lost. Check your internet and join again."}
+	Session.online = false
+	get_tree().change_scene_to_file("res://menu.tscn")
+
+
+# ------------------------------------------------------------------ the end
+
+func _show_win(team: int) -> void:
 	sfx.fade_music(1.2)
 	sfx.play("win")
-	var is_red: bool = gs.winner == 0
-	var col: Color = RED_COL if is_red else BLUE_COL
+	var col: Color = RED_COL if team == 0 else BLUE_COL
 	var shade: ColorRect = ColorRect.new()
 	shade.color = Color(0, 0, 0, 0.6)
-	shade.position = Vector2.ZERO
 	shade.size = Vector2(540, 960)
 	shade.z_index = 50
 	add_child(shade)
-	var l: Label = _label("RED TEAM WINS!" if is_red else "BLUE TEAM WINS!", Vector2(0, 380), Vector2(540, 90), 52, col)
+	var l: Label = UI.label(self, "RED TEAM WINS!" if team == 0 else "BLUE TEAM WINS!",
+		Vector2(0, 340), Vector2(540, 90), 52, col)
 	l.z_index = 51
-	var b: Button = Button.new()
-	b.text = "PLAY AGAIN"
-	b.position = Vector2(150, 500)
-	b.size = Vector2(240, 80)
-	b.add_theme_font_size_override("font_size", 28)
-	_style_button(b, Color(0.12, 0.65, 1.0), CYAN, Color(0.02, 0.1, 0.22))
-	b.z_index = 51
-	b.pressed.connect(func() -> void: get_tree().reload_current_scene())
-	add_child(b)
+	var is_host: bool = Session.online and Session.info.get("host", -1) == Session.me_seat
+	if not Session.online or is_host:
+		var b: Button = UI.button(self, "PLAY AGAIN", Vector2(150, 470), Vector2(240, 80), 28)
+		b.z_index = 51
+		if Session.online:
+			b.pressed.connect(func() -> void: Net.send("c_rematch"))
+		else:
+			b.pressed.connect(func() -> void: get_tree().reload_current_scene())
+	else:
+		var w: Label = UI.label(self, "Waiting for the host to start again...", Vector2(0, 480), Vector2(540, 50), 22, Color(1, 1, 1, 0.8))
+		w.z_index = 51
+	var m: Button = UI.button(self, "MENU", Vector2(190, 590), Vector2(160, 56), 22,
+		Color(0.09, 0.13, 0.38), Color(0.5, 0.6, 0.9), Color.WHITE)
+	m.z_index = 51
+	m.pressed.connect(_leave_to_menu)

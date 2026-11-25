@@ -190,15 +190,17 @@ func rematch(peer: int) -> void:
 	started = false
 	gs = null
 	log = PackedInt32Array()
-	for s in seats:
-		s["bot"] = false
-	# players who left during the game are dropped; the rest return to the lobby
+	# players who left during the game are dropped; the rest return to the lobby (host stays host)
 	var keep: Array = []
-	for s in seats:
-		if s["connected"]:
-			keep.append(s)
+	var new_host: int = 0
+	for i in seats.size():
+		if seats[i]["connected"]:
+			seats[i]["bot"] = false
+			if i == host_seat:
+				new_host = keep.size()
+			keep.append(seats[i])
 	seats = keep
-	host_seat = 0 if seats.size() > 0 else -1
+	host_seat = new_host if seats.size() > 0 else -1
 	broadcast_info()
 
 

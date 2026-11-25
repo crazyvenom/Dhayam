@@ -2,7 +2,7 @@
 # Usage:  powershell -File tests\run_net_test.ps1 [-Url ws://127.0.0.1:8080] [-StartServer] [-DropAt 150]
 param(
   [string]$Url = "ws://127.0.0.1:8080",
-  [switch]$StartServer = $true,
+  [int]$LocalServer = 1,
   [int]$Target = 400,
   [int]$DropAt = -1
 )
@@ -14,7 +14,7 @@ Remove-Item "$tmp\*" -Force -ErrorAction SilentlyContinue
 $codefile = "$tmp\code.txt"
 
 $server = $null
-if ($StartServer) {
+if ($LocalServer -eq 1) {
   $server = Start-Process -FilePath $godot -ArgumentList @("--headless","--path",$proj,"res://server.tscn","--","--server") -RedirectStandardOutput "$tmp\server.out" -RedirectStandardError "$tmp\server.err" -PassThru -WindowStyle Hidden
   Start-Sleep -Seconds 3
 }
