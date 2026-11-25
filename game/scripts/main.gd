@@ -19,9 +19,12 @@ var stick1: StickView
 var stick2: StickView
 var selected: int = -1       # index into gs.collected
 var busy: bool = false
+var sfx: Sfx
 
 
 func _ready() -> void:
+	sfx = Sfx.new()
+	add_child(sfx)
 	board = BoardView.new()
 	board.gs = gs
 	board.position = BOARD_POS
@@ -37,6 +40,9 @@ func _ready() -> void:
 	_build_ui()
 	_refresh_all(false)
 	_begin_turn()
+	# Fade in from black (the intro fades out to black)
+	modulate = Color(0, 0, 0, 1)
+	create_tween().tween_property(self, "modulate", Color.WHITE, 0.5)
 	# Developer test modes (only active when these environment variables are set)
 	if OS.has_environment("DHAYAM_AUTOPLAY"):
 		Engine.time_scale = 8.0
@@ -230,8 +236,12 @@ func _anim_move(team: int, c: int, from: int, to: int) -> void:
 		if to == gs.n_sq:
 			path.append(Routes.home_slot(team, c))
 	var tw: Tween = create_tween()
+	if from == -1:
+		sfx.play("coin_out")
 	for p in path:
 		tw.tween_property(coin, "position", p, 0.09)
+		if from != -1:
+			tw.tween_callback(sfx.play.bind("step", randf_range(0.95, 1.1)))
 	await tw.finished
 	coin.z_index = 0
 
@@ -258,6 +268,7 @@ func _on_roll() -> void:
 		return
 	busy = true
 	roll_btn.disabled = true
+	sfx.play("dice_roll")
 	for i in 9:
 		stick1.set_value(randi() % 4)
 		stick2.set_value(randi() % 4)
@@ -273,22 +284,26 @@ func _on_roll() -> void:
 	var out: Dictionary = gs.on_roll(v)
 	var kind: String = out["kind"]
 	if kind == "fail_locked":
+		sfx.play("fail")
 		_set_status("Not a 1 - the turn passes")
 		await get_tree().create_timer(1.2).timeout
 		gs.next_turn()
 		_begin_turn()
 	elif kind == "unlock":
+		sfx.play_result(v)
 		_set_status("A 1! Your first coin is out - roll again")
 		await _anim_move(gs.turn, out["coin"], -1, 0)
 		_refresh_all(true)
 		busy = false
 		roll_btn.disabled = false
 	elif kind == "more":
+		sfx.play_result(v)
 		_set_status("%d - bonus roll! Roll again" % v)
 		_refresh_chips()
 		busy = false
 		roll_btn.disabled = false
 	else:
+		sfx.play_result(v)
 		_refresh_chips()
 		await _enter_spend()
 
@@ -329,6 +344,7 @@ func _on_chip(i: int) -> void:
 	if busy or gs.phase != "spend" or i >= gs.collected.size():
 		return
 	if _has_legal_for(gs.collected[i]):
+		sfx.play("tick")
 		selected = i
 		_refresh_chips()
 		_update_movable()
@@ -368,8 +384,14 @@ func _play_move(c: int) -> void:
 	_refresh_chips()
 	await _anim_move(team, c, res["from"], res["to"])
 	var captured: Array = res["captured"]
+	var landed: int = res["to"]
 	if captured.size() > 0:
+		sfx.play("capture")
 		_set_status("Captured %d coin(s)! You get a bonus roll" % captured.size())
+	elif landed == gs.n_sq:
+		sfx.play("finish")
+	elif landed >= 0 and gs.safe.has(gs.keys[team][landed]):
+		sfx.play("safe")
 	_refresh_all(true)
 	await get_tree().create_timer(0.35).timeout
 	if gs.winner >= 0:
@@ -404,6 +426,7 @@ func _finish_spend() -> void:
 
 func _show_win() -> void:
 	busy = true
+	sfx.play("win")
 	var is_red: bool = gs.winner == 0
 	var col: Color = RED_COL if is_red else BLUE_COL
 	var shade: ColorRect = ColorRect.new()
