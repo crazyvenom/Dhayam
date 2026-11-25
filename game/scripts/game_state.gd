@@ -69,8 +69,8 @@ func dest(team: int, coin: int, v: int) -> int:
 		return NO_MOVE
 	if p == -1:
 		return 0 if (v == 1 or v == 5) else NO_MOVE
-	if v == 5 and has_base_coin(team):
-		return NO_MOVE            # while a coin waits in base, a 5 can only bring a coin out
+	if (v == 5 or v == 1) and has_base_coin(team):
+		return NO_MOVE            # while a coin waits in base, a 1 or 5 can only bring a coin out
 	var d: int = p + v
 	if d > n_sq:
 		return NO_MOVE            # exact roll needed to enter the finish

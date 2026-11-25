@@ -24,10 +24,12 @@ func _init() -> void:
 	check(not t.can_move(0, 0, 5), "5 must not move a board coin while a coin is in base")
 	check(t.can_move(0, 1, 5), "5 must bring a base coin out")
 	check(t.can_move(0, 0, 3), "3 should still move a board coin")
-	check(t.can_move(0, 0, 1), "1 should still move a board coin")
+	check(not t.can_move(0, 0, 1), "1 must not move a board coin while a coin is in base")
+	check(t.can_move(0, 1, 1), "1 must bring a base coin out")
 	for c in 12:
 		t.pos[0][c] = 10 + c               # nobody left in base
 	check(t.can_move(0, 0, 5), "5 must move a coin once the base is empty")
+	check(t.can_move(0, 0, 1), "1 must move a coin once the base is empty")
 	print("5-rule checks done")
 
 	# Dice odds over all 16 stick combinations

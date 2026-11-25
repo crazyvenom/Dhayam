@@ -36,7 +36,7 @@ Dhayam is an online team board game for Android. Two teams, **Red** (tan coins) 
 - Before a player has rolled their **first 1**, none of their numbers count. They keep rolling on their turns. (Unlocking is **per player**, not per team.)
 - The player's first 1 **unlocks** them and also **brings one coin out** onto the team's start square.
 - After unlocking, a **1 or a 5** brings a coin out of base. Other numbers move coins already on the board.
-- **The 5 rule:** while the team still has at least one coin in base, a **5 can only be used to bring a coin out**. It can't move a coin already on the board. Once the base is empty, a 5 moves coins like any other number.
+- **The 1 and 5 rule:** while the team still has at least one coin in base, a **1 or a 5 can only be used to bring a coin out**. They can't move a coin already on the board. Once the base is empty, 1 and 5 move coins like any other number.
 
 ## 7. Movement
 - Coins move along the team route (section 9), exactly as many squares as the number spent.
