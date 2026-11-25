@@ -46,14 +46,15 @@ Dhayam is an online team board game for Android. Two teams, **Red** (tan coins) 
 - A capture gives the capturer a **bonus turn** (another roll). Getting a coin into the finish gives no bonus.
 - **X squares are safe.** No captures happen there. The **first team to arrive holds the square**, and the opponent cannot land on it until it is empty.
 
-## 9. Routes (as drawn on the board; exact squares to be fixed in the board diagram)
-Both teams go clockwise around the outer ring.
+## 9. Routes (measured from the board diagram; 79 squares per team, then the oval)
+Square counts: rows = X, 5 cells, X(center), 5 cells, X. Side columns = X, 5 cells, X, 5 cells, X. Upper center column = 5 cells. Lower center column = 5 cells then the bottom X. Each diagonal = 5 cells. Each inner arm = X, 5 cells, X. Two small X squares sit beside the first cell of the lower center column.
 
-**Red:** left half of top strip -> down the upper center column -> right along the middle row -> down the right column -> left along the bottom row -> up the left column -> right along the middle row -> down the lower center column to the bottom X of the M -> up the right diagonal -> down the right inner arm -> finish oval.
+**Red (counterclockwise, to be confirmed):** start on the top-left X -> right along the top strip (5 cells + center X) -> down the upper center column (5 cells + middle-row center X) -> LEFT along the middle row -> down the left column -> right along the bottom row -> up the right column -> LEFT along the right half of the middle row -> down into the RIGHT small X -> sideways into the first cell of the lower center column -> down to the bottom X -> up the right diagonal -> right inner arm (X, 5 cells, X) -> finish oval.
 
-**Blue:** right half of top strip (walking left) -> down the upper center column -> same outer ring as Red -> same lower center column -> up the left diagonal -> down the left inner arm -> finish oval.
+**Blue (clockwise):** mirror image. Start on the top-right X -> left along the top strip -> down the upper center column -> RIGHT along the middle row -> down the right column -> left along the bottom row -> up the left column -> RIGHT along the left half of the middle row -> down into the LEFT small X -> sideways into the first column cell -> bottom X -> left diagonal -> left inner arm -> finish oval.
 
-- Each team has a private half of the top strip and a private inner arm.
+- Red and Blue travel the outer ring in opposite directions and meet head-on.
+- Each team has a private half of the top strip, a private small X and a private inner arm.
 - The upper center column is crossed once per coin, unless the coin is captured and has to start again.
 
 ## 10. Finishing and winning
@@ -66,7 +67,7 @@ Emoji reactions, sound effects and music, avatars and customization, rematch, te
 ---
 
 ## Open items (to settle before coding)
-1. Exact **square count and numbering** of each route (needs a careful count from the board photo).
+1. ~~Square count~~ done (79 per team, measured from the diagram). **Confirm Red goes counterclockwise** (mirror of Blue).
 2. Where exactly each team's **start square** is (assumed: the top-left X for Red, the top-right X for Blue).
 3. Can a coin **exit the safe X** square freely when the opponent is waiting? (assumed yes)
 4. What if the finishing exact roll needs more squares than remain in the inner arm (assumed: that number is lost).

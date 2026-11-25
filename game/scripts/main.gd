@@ -208,10 +208,14 @@ func _refresh_all(animate: bool) -> void:
 					var idx: int = g.find(t * 100 + c)
 					target += Vector2((idx - (g.size() - 1) / 2.0) * 16.0, (idx % 2) * 8.0)
 			var coin: Coin = coins[t][c]
+			var s: float = 0.55 if p2 == gs.n_sq else 1.0   # finished coins are drawn smaller
 			if animate:
-				create_tween().tween_property(coin, "position", target, 0.2)
+				var tw: Tween = create_tween().set_parallel(true)
+				tw.tween_property(coin, "position", target, 0.2)
+				tw.tween_property(coin, "scale", Vector2(s, s), 0.2)
 			else:
 				coin.position = target
+				coin.scale = Vector2(s, s)
 
 
 func _anim_move(team: int, c: int, from: int, to: int) -> void:

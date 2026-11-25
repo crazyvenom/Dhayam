@@ -44,20 +44,21 @@ func _draw() -> void:
 	for t in 2:
 		var c: Vector2 = Routes.RED_BASE if t == 0 else Routes.BLUE_BASE
 		var col: Color = Color(1.0, 0.45, 0.55) if t == 0 else Color(0.45, 0.70, 1.0)
-		draw_circle(c, 118.0, Color(col.r, col.g, col.b, 0.07))
-		draw_arc(c, 118.0, 0.0, TAU, 72, Color(col.r, col.g, col.b, 0.25), 14.0)
-		draw_arc(c, 118.0, 0.0, TAU, 72, col, 4.0)
-		draw_string(font, c + Vector2(-150, -124), "RED BASE" if t == 0 else "BLUE BASE",
+		var r: float = Routes.BASE_R
+		draw_circle(c, r, Color(col.r, col.g, col.b, 0.07))
+		draw_arc(c, r, 0.0, TAU, 72, Color(col.r, col.g, col.b, 0.25), 14.0)
+		draw_arc(c, r, 0.0, TAU, 72, col, 4.0)
+		draw_string(font, c + Vector2(-150, -r - 8), "RED BASE" if t == 0 else "BLUE BASE",
 			HORIZONTAL_ALIGNMENT_CENTER, 300, 20, Color(col.r, col.g, col.b, 0.9))
 
 	# Finish oval
-	draw_set_transform(Routes.OVAL, 0.0, Vector2(1.0, 105.0 / 170.0))
-	draw_circle(Vector2.ZERO, 170.0, Color(0.31, 0.89, 1.0, 0.07))
-	draw_arc(Vector2.ZERO, 170.0, 0.0, TAU, 96, Color(0.31, 0.89, 1.0, 0.25), 14.0)
-	draw_arc(Vector2.ZERO, 170.0, 0.0, TAU, 96, CYAN, 4.0)
+	draw_set_transform(Routes.OVAL, 0.0, Vector2(1.0, Routes.OVAL_RY / Routes.OVAL_RX))
+	draw_circle(Vector2.ZERO, Routes.OVAL_RX, Color(0.31, 0.89, 1.0, 0.07))
+	draw_arc(Vector2.ZERO, Routes.OVAL_RX, 0.0, TAU, 96, Color(0.31, 0.89, 1.0, 0.25), 14.0)
+	draw_arc(Vector2.ZERO, Routes.OVAL_RX, 0.0, TAU, 96, CYAN, 4.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_string(font, Routes.OVAL + Vector2(-150, 8), "FINISH",
-		HORIZONTAL_ALIGNMENT_CENTER, 300, 34, Color(0.62, 0.86, 1.0, 0.55))
+	draw_string(font, Routes.OVAL + Vector2(-150, -Routes.OVAL_RY - 12), "FINISH",
+		HORIZONTAL_ALIGNMENT_CENTER, 300, 24, Color(0.62, 0.86, 1.0, 0.6))
 
 	# Collect each unique square once (squares shared by both teams are drawn once)
 	var squares: Dictionary = {}
