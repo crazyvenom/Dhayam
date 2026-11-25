@@ -19,8 +19,8 @@ if ($LocalServer -eq 1) {
   Start-Sleep -Seconds 3
 }
 function Start-Client($name, $role, $extra) {
-  $args = @("--headless","--path",$proj,"res://tests/net_client.tscn","--","--role=$role","--url=$Url","--codefile=$codefile","--players=3","--target=$Target","--name=$name") + $extra
-  return Start-Process -FilePath $godot -ArgumentList $args -RedirectStandardOutput "$tmp\$name.out" -RedirectStandardError "$tmp\$name.err" -PassThru -WindowStyle Hidden
+  $clientArgs = @("--headless","--path",$proj,"res://tests/net_client.tscn","--","--role=$role","--url=$Url","--codefile=$codefile","--players=3","--target=$Target","--name=$name") + $extra
+  return Start-Process -FilePath $godot -ArgumentList $clientArgs -RedirectStandardOutput "$tmp\$name.out" -RedirectStandardError "$tmp\$name.err" -PassThru -WindowStyle Hidden
 }
 $procs = @()
 $procs += Start-Client "Host" "host" @()
@@ -30,7 +30,7 @@ $procs += Start-Client "Guest2" "guest" $dropArg
 $procs | Wait-Process -Timeout 120 -ErrorAction SilentlyContinue
 foreach ($n in "Host","Guest1","Guest2") {
   "---- $n ----"
-  Get-Content "$tmp\$n.out" | Where-Object { $_ -match "RESULT|ERROR|lobby|started|drop|reconnect|TIMEOUT|failed" }
+  Get-Content "$tmp\$n.out" | Where-Object { $_ -match "RESULT|ERROR|lobby|started|drop|reconnect|TIMEOUT|failed|CHAT" }
 }
 if ($server) { "---- server log ----"; Get-Content "$tmp\server.out" | Select-Object -Last 8; Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
 $procs | ForEach-Object { if (-not $_.HasExited) { Stop-Process -Id $_.Id -Force } }

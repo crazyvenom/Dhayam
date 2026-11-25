@@ -22,6 +22,7 @@ var code: String = ""
 var dropped: bool = false
 var finished: bool = false
 var errors: Array = []
+var chat_sent: bool = false
 
 
 func _ready() -> void:
@@ -44,6 +45,7 @@ func _ready() -> void:
 	Net.url = url
 	Net.room_updated.connect(_on_room)
 	Net.game_started.connect(_on_start)
+	Net.chat_received.connect(func(seat: int, msg: int) -> void: print(player_name, " CHAT from seat ", seat, " msg ", msg))
 	Net.action_received.connect(_on_action)
 	Net.error_received.connect(func(t: String) -> void:
 		errors.append(t)
@@ -99,6 +101,11 @@ func _on_start(info: Dictionary) -> void:
 			gs.apply_move(lg[i + 1], lg[i + 2])
 		count += 1
 	print(player_name, " game started, replayed ", count, " actions, I am seat ", me_seat)
+	if role == "host" and not chat_sent:
+		chat_sent = true
+		await get_tree().create_timer(0.5).timeout
+		Net.send("c_chat", [7])
+		Net.send("c_chat", [2])      # sent immediately after the first: the server must ignore it (spam limit)
 	_maybe_act()
 
 

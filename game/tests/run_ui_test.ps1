@@ -15,10 +15,17 @@ function Start-Game($name, $auto) {
   $env:DHAYAM_SKIP_INTRO = "1"; $env:DHAYAM_AUTO = $auto; $env:DHAYAM_NAME = $name
   $env:DHAYAM_TOKEN = "tok-$name"; $env:DHAYAM_URL = $Url; $env:DHAYAM_CODEFILE = "$tmp\code.txt"
   $env:DHAYAM_PLAYERS = "2"; $env:DHAYAM_AUTOPLAY = "1"; $env:DHAYAM_STOP_AT = "$StopAt"
-  return Start-Process -FilePath $godot -ArgumentList @("--headless","--path",$proj) -RedirectStandardOutput "$tmp\$name.out" -RedirectStandardError "$tmp\$name.err" -PassThru -WindowStyle Hidden
+  $gameArgs = @("--headless","--path",$proj)
+  if ($Shot -ne "" -and $name -eq "Host") {   # the host takes a screenshot (needs a real window)
+    $env:DHAYAM_SHOT = $Shot; $env:DHAYAM_SECONDS = "14"; $env:DHAYAM_DEMO_CHAT = "1"; $env:DHAYAM_STOP_AT = "999999"
+    $gameArgs = @("--path",$proj,"--resolution","540x960")
+  }
+  $p = Start-Process -FilePath $godot -ArgumentList $gameArgs -RedirectStandardOutput "$tmp\$name.out" -RedirectStandardError "$tmp\$name.err" -PassThru -WindowStyle Hidden
+  Remove-Item Env:\DHAYAM_SHOT, Env:\DHAYAM_SECONDS, Env:\DHAYAM_DEMO_CHAT -ErrorAction SilentlyContinue
+  return $p
 }
 $procs = @((Start-Game "Host" "host"), (Start-Game "Guest" "guest"))
-Remove-Item Env:\DHAYAM_SKIP_INTRO, Env:\DHAYAM_AUTO, Env:\DHAYAM_NAME, Env:\DHAYAM_TOKEN, Env:\DHAYAM_URL, Env:\DHAYAM_CODEFILE, Env:\DHAYAM_PLAYERS, Env:\DHAYAM_AUTOPLAY, Env:\DHAYAM_STOP_AT
+Remove-Item Env:\DHAYAM_SKIP_INTRO, Env:\DHAYAM_AUTO, Env:\DHAYAM_NAME, Env:\DHAYAM_TOKEN, Env:\DHAYAM_URL, Env:\DHAYAM_CODEFILE, Env:\DHAYAM_PLAYERS, Env:\DHAYAM_AUTOPLAY, Env:\DHAYAM_STOP_AT, Env:\DHAYAM_SHOT, Env:\DHAYAM_SECONDS, Env:\DHAYAM_DEMO_CHAT -ErrorAction SilentlyContinue
 $procs | Wait-Process -Timeout 150 -ErrorAction SilentlyContinue
 foreach ($n in "Host","Guest") {
   "---- $n ----"

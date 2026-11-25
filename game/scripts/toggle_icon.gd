@@ -30,10 +30,13 @@ func _gui_input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var c: Vector2 = size / 2.0
-	var col: Color = CYAN if on else OFF
+	var col: Color = CYAN if (on or kind == "chat") else OFF
 	draw_circle(c, 23.0, Color(col.r, col.g, col.b, 0.15))
 	draw_circle(c, 21.0, Color(0.09, 0.12, 0.36, 0.95))
 	draw_arc(c, 21.0, 0.0, TAU, 40, col, 2.5)
+	if kind == "chat":
+		Reactions.draw_face(self, c, 12.0, 0)
+		return
 	if kind == "music":
 		draw_circle(c + Vector2(-5, 8), 5.5, col)
 		draw_line(c + Vector2(0, 8), c + Vector2(0, -11), col, 3.0)

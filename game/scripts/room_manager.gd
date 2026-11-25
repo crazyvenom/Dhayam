@@ -8,6 +8,7 @@ const MAX_ROOMS: int = 60
 var net: Node
 var rooms: Dictionary = {}       # code -> Room
 var peer_room: Dictionary = {}   # peer id -> code
+var _chat_last: Dictionary = {}  # peer id -> time of their last reaction
 var _clean_timer: float = 0.0
 
 
@@ -135,6 +136,10 @@ func chat(peer: int, msg: int) -> void:
 	var r: Room = _room_of(peer)
 	if r == null:
 		return
+	var t: int = Time.get_ticks_msec()
+	if t - int(_chat_last.get(peer, -10000)) < 700:
+		return                          # too fast: ignore (stops spamming)
+	_chat_last[peer] = t
 	var seat: int = r.seat_of_peer(peer)
 	if seat >= 0 and msg >= 0 and msg < 12:
 		r.broadcast_chat(seat, msg)

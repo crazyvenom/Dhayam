@@ -22,6 +22,10 @@ var stick2: StickView
 var banner: Label
 var exit_btn: Button
 var sfx: Sfx
+var chat_btn: ToggleIcon
+var chat_panel: Node2D
+var bubbles: Node2D
+var _bubble_slot: int = 0
 
 var queue: Array = []            # actions waiting to be played
 var processing: bool = false     # an action is being animated
@@ -73,11 +77,14 @@ func _ready() -> void:
 		Net.room_updated.connect(_on_net_room)
 		Net.game_started.connect(_on_net_started)
 		Net.connection_lost.connect(_on_net_lost)
+		Net.chat_received.connect(_on_net_chat)
 		Net.error_received.connect(func(t: String) -> void: _set_status(t))
 	# Fade in from black (the intro and menu fade out to black)
 	modulate = Color(0, 0, 0, 1)
 	create_tween().tween_property(self, "modulate", Color.WHITE, 0.5)
 	# Developer test modes (only active when these environment variables are set)
+	if OS.has_environment("DHAYAM_DEMO_CHAT") and Session.online:
+		_demo_chat()
 	if OS.has_environment("DHAYAM_AUTOPLAY"):
 		Engine.time_scale = 8.0
 		_autoplay()
@@ -87,6 +94,18 @@ func _ready() -> void:
 		get_viewport().get_texture().get_image().save_png(OS.get_environment("DHAYAM_SHOT"))
 		print("turns played: ", _auto_turns, "  winner: ", gs.winner)
 		get_tree().quit()
+
+
+## Test only: shortly before the screenshot, open the reaction panel and show two bubbles.
+func _demo_chat() -> void:
+	var secs: float = float(OS.get_environment("DHAYAM_SECONDS")) if OS.has_environment("DHAYAM_SECONDS") else 6.0
+	await get_tree().create_timer(maxf(secs - 2.0, 0.5), true, false, true).timeout
+	Engine.time_scale = 1.0
+	_on_net_chat(int(Session.roster[0]["seat"]), 1)
+	_on_net_chat(int(Session.roster[1]["seat"]), 7)
+	chat_btn.on = true
+	chat_btn.queue_redraw()
+	chat_panel.visible = true
 
 
 func _autoplay() -> void:
@@ -152,11 +171,89 @@ func _build_ui() -> void:
 		Color(0.09, 0.13, 0.38), Color(0.5, 0.6, 0.9), Color.WHITE)
 	exit_btn.pressed.connect(_on_exit)
 
+	bubbles = Node2D.new()
+	bubbles.z_index = 75
+	add_child(bubbles)
+	if Session.online:
+		_build_reactions()
+
 	banner = UI.label(self, "", Vector2(30, 380), Vector2(480, 120), 26, Color.WHITE)
 	banner.add_theme_stylebox_override("normal", UI.box(Color(0.05, 0.05, 0.2, 0.95), UI.PINK, 18, 12.0))
 	banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	banner.z_index = 80
 	banner.visible = false
+
+
+## The smiley button (top) and the panel of reactions it opens. Online games only.
+func _build_reactions() -> void:
+	chat_btn = ToggleIcon.new("chat", false)
+	chat_btn.position = Vector2(380, 12)
+	chat_btn.toggled_state.connect(func(on: bool) -> void: chat_panel.visible = on)
+	add_child(chat_btn)
+	chat_panel = Node2D.new()
+	chat_panel.z_index = 70
+	chat_panel.visible = false
+	add_child(chat_panel)
+	var bg: Panel = Panel.new()
+	bg.position = Vector2(20, 590)
+	bg.size = Vector2(500, 160)
+	bg.add_theme_stylebox_override("panel", UI.box(Color(0.05, 0.07, 0.25, 0.97), UI.CYAN, 18, 12.0))
+	chat_panel.add_child(bg)
+	for i in Reactions.FACE_COUNT:
+		var ic: ReactionIcon = ReactionIcon.new(i, Vector2(64, 64))
+		ic.position = Vector2(53 + i * 74, 604)
+		ic.picked.connect(_send_reaction)
+		chat_panel.add_child(ic)
+	for i in Reactions.PHRASES.size():
+		var ph: ReactionIcon = ReactionIcon.new(Reactions.FACE_COUNT + i, Vector2(74, 46))
+		ph.position = Vector2(33 + i * 80, 686)
+		ph.picked.connect(_send_reaction)
+		chat_panel.add_child(ph)
+
+
+func _send_reaction(msg: int) -> void:
+	Net.send("c_chat", [msg])
+	chat_panel.visible = false
+	chat_btn.on = false
+	chat_btn.queue_redraw()
+
+
+## Somebody (maybe you) sent a reaction: show it as a bubble that fades away.
+func _on_net_chat(seat: int, msg: int) -> void:
+	if not is_inside_tree():
+		return
+	var who: Dictionary = {}
+	for r in Session.roster:
+		if r["seat"] == seat:
+			who = r
+	if who.is_empty():
+		return
+	var col: Color = RED_COL if who["team"] == 0 else BLUE_COL
+	var b: Node2D = Node2D.new()
+	b.position = Vector2(120, 84 + (_bubble_slot % 3) * 62)
+	_bubble_slot += 1
+	var panel: Panel = Panel.new()
+	panel.size = Vector2(300, 56)
+	panel.add_theme_stylebox_override("panel", UI.box(Color(0.05, 0.07, 0.25, 0.95), col, 16, 8.0))
+	b.add_child(panel)
+	var av: AvatarView = AvatarView.new(who["avatar"], who["name"], 44.0)
+	av.position = Vector2(6, 6)
+	b.add_child(av)
+	var nm: Label = UI.label(b, str(who["name"]), Vector2(56, 2), Vector2(150, 22), 15, col, HORIZONTAL_ALIGNMENT_LEFT)
+	nm.clip_text = true
+	if Reactions.is_face(msg):
+		var ic: ReactionIcon = ReactionIcon.new(msg, Vector2(44, 44))
+		ic.position = Vector2(56, 8)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(ic)
+	else:
+		UI.label(b, Reactions.phrase(msg), Vector2(56, 22), Vector2(236, 30), 22, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	bubbles.add_child(b)
+	sfx.play("tick", 1.4)
+	var tw: Tween = create_tween()
+	tw.tween_interval(2.6)
+	tw.tween_property(b, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(b.queue_free)
 
 
 func _set_status(text: String) -> void:
