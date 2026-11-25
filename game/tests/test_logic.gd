@@ -18,6 +18,18 @@ func _init() -> void:
 	print("squares per route: ", gs0.n_sq, "   safe squares: ", gs0.safe.size())
 	check(gs0.routes[0].size() == gs0.routes[1].size(), "routes differ in length")
 
+	# Rule: with a coin still in base, a 5 may only bring a coin out
+	var t := GameState.new()
+	t.pos[0][0] = 10                       # one coin on the board, 11 still in base
+	check(not t.can_move(0, 0, 5), "5 must not move a board coin while a coin is in base")
+	check(t.can_move(0, 1, 5), "5 must bring a base coin out")
+	check(t.can_move(0, 0, 3), "3 should still move a board coin")
+	check(t.can_move(0, 0, 1), "1 should still move a board coin")
+	for c in 12:
+		t.pos[0][c] = 10 + c               # nobody left in base
+	check(t.can_move(0, 0, 5), "5 must move a coin once the base is empty")
+	print("5-rule checks done")
+
 	# Dice odds over all 16 stick combinations
 	var counts: Dictionary = {}
 	for a in 4:
