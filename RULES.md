@@ -49,9 +49,13 @@ Dhayam is an online team board game for Android. Two teams, **Red** (tan coins) 
 ## 9. Routes (measured from the board diagram; 79 squares per team, then the oval)
 Square counts: rows = X, 5 cells, X(center), 5 cells, X. Side columns = X, 5 cells, X, 5 cells, X. Upper center column = 5 cells. Lower center column = 5 cells then the bottom X. Each diagonal = 5 cells. Each inner arm = X, 5 cells, X. Two small X squares sit beside the first cell of the lower center column.
 
-**Red (counterclockwise, to be confirmed):** start on the top-left X -> right along the top strip (5 cells + center X) -> down the upper center column (5 cells + middle-row center X) -> LEFT along the middle row -> down the left column -> right along the bottom row -> up the right column -> LEFT along the right half of the middle row -> down into the RIGHT small X -> sideways into the first cell of the lower center column -> down to the bottom X -> up the right diagonal -> right inner arm (X, 5 cells, X) -> finish oval.
+The route has two separate layers.
 
-**Blue (clockwise):** mirror image. Start on the top-right X -> left along the top strip -> down the upper center column -> RIGHT along the middle row -> down the right column -> left along the bottom row -> up the left column -> RIGHT along the left half of the middle row -> down into the LEFT small X -> sideways into the first column cell -> bottom X -> left diagonal -> left inner arm -> finish oval.
+**Layer 1 - outer ring:** Red goes counterclockwise, Blue goes clockwise (confirmed). **Layer 2 - the M:** after the ring both come down the center column and cross over at the bottom X: Red takes the LEFT diagonal and arm, Blue the RIGHT (confirmed).
+
+**Red:** start on the top-left X -> right along the top strip (5 cells + center X) -> down the upper center column (5 cells + middle-row center X) -> LEFT along the middle row -> down the left column -> right along the bottom row -> up the right column -> LEFT along the right half of the middle row -> down into the RIGHT small X -> sideways into the first cell of the lower center column -> down to the bottom X -> up the LEFT diagonal -> left inner arm (X, 5 cells, X) -> finish oval.
+
+**Blue:** start on the top-right X -> left along the top strip -> down the upper center column -> RIGHT along the middle row -> down the right column -> left along the bottom row -> up the left column -> RIGHT along the left half of the middle row -> down into the LEFT small X -> sideways into the first column cell -> bottom X -> up the RIGHT diagonal -> right inner arm -> finish oval.
 
 - Red and Blue travel the outer ring in opposite directions and meet head-on.
 - Each team has a private half of the top strip, a private small X and a private inner arm.
@@ -67,7 +71,7 @@ Emoji reactions, sound effects and music, avatars and customization, rematch, te
 ---
 
 ## Open items (to settle before coding)
-1. ~~Square count~~ done (79 per team, measured from the diagram). **Confirm Red goes counterclockwise** (mirror of Blue).
+1. ~~Square count~~ done (79 per team, measured from the diagram). ~~Ring direction~~ and ~~inner arms~~ confirmed by the user.
 2. Where exactly each team's **start square** is (assumed: the top-left X for Red, the top-right X for Blue).
 3. Can a coin **exit the safe X** square freely when the opponent is waiting? (assumed yes)
 4. What if the finishing exact roll needs more squares than remain in the inner arm (assumed: that number is lost).

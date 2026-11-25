@@ -45,13 +45,15 @@ static func xs() -> Array:
 	]
 
 
-## Red travels the outer ring counterclockwise, Blue clockwise (mirror images).
+## LAYER 1 (outer ring): Red travels counterclockwise, Blue clockwise (they meet head-on).
+## LAYER 2 (the M): both come down the center column, then cross over at the bottom X:
+## Red takes the LEFT diagonal and arm, Blue takes the RIGHT diagonal and arm.
 static func waypoints(team: int) -> Array:
 	if team == 0:
 		return [TL, TC, MC, ML, BL, BR, MR, Vector2(522, 415), SMALL_R, COL1, BX,
-			Vector2(725, 531), Vector2(725, 866)]
+			Vector2(196, 531), Vector2(196, 866)]
 	return [TR, TC, MC, MR, BR, BL, ML, Vector2(398, 415), SMALL_L, COL1, BX,
-		Vector2(196, 531), Vector2(196, 866)]
+		Vector2(725, 531), Vector2(725, 866)]
 
 
 ## Returns the list of squares for a team: each is {"pos": Vector2, "ang": float}.
