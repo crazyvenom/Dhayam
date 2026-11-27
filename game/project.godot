@@ -7,6 +7,8 @@ config/name="Dhayam"
 run/main_scene="res://intro.tscn"
 config/features=PackedStringArray("4.7")
 config/icon="res://icon.png"
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.02, 0.024, 0.05, 1)
 
 [autoload]
 
